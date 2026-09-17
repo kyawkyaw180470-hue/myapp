@@ -1136,6 +1136,9 @@
   let unsubCommandList = [];
   let unsubBlockedList = [];
 
+  // ⭐ FIX: collection တစ်ခုချင်း status မှတ်
+  const collectionStatus = { message: 'loading', commands: 'loading', blocked: 'loading' };
+
   const CACHE_PREFIX = "vipz_cache_";
   const CACHE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
   const BADGE_PREFIX = "vipz_badge_";
@@ -1209,6 +1212,51 @@
       liveBadge.innerHTML = '<span class="live-dot"></span>CACHED';
     } else {
       liveBadge.innerHTML = '<span class="live-dot"></span>LIVE';
+    }
+  }
+
+  // ═══════════════ INFO BAR — COLLECTION STATUS ⭐ FIX ═══════════════
+  function updateAllStatus() {
+    if (!fetchInfo) return;
+    const lines = [];
+    let hasError = false;
+    let hasData = false;
+    let stillLoading = false;
+
+    ['message', 'commands', 'blocked'].forEach(name => {
+      const s = collectionStatus[name];
+      if (s === 'loading') {
+        lines.push('⏳ ' + name + ': loading...');
+        stillLoading = true;
+      } else if (typeof s === 'string' && s.startsWith('error:')) {
+        lines.push('❌ ' + name + ': ' + s.substring(6));
+        hasError = true;
+      } else {
+        const count = typeof s === 'number' ? s : 0;
+        lines.push((count > 0 ? '✅' : '⚠️') + ' ' + name + ': ' + count + ' docs');
+        if (count > 0) hasData = true;
+      }
+    });
+
+    fetchInfo.innerHTML = lines.join('<br>');
+    fetchInfo.style.padding = '10px';
+    fetchInfo.style.fontSize = '12px';
+    fetchInfo.style.fontWeight = 'bold';
+    fetchInfo.style.textAlign = 'left';
+    fetchInfo.style.lineHeight = '1.6';
+
+    if (hasError) {
+      fetchInfo.style.color = '#ffffff';
+      fetchInfo.style.background = '#dc2626';
+    } else if (hasData) {
+      fetchInfo.style.color = '#ffffff';
+      fetchInfo.style.background = '#065f46';
+    } else if (stillLoading) {
+      fetchInfo.style.color = '#ffffff';
+      fetchInfo.style.background = '#1e40af';
+    } else {
+      fetchInfo.style.color = '#ffffff';
+      fetchInfo.style.background = '#d97706';
     }
   }
 
@@ -1286,13 +1334,17 @@
     else { el.classList.add("hidden"); }
   }
 
-  // ═══════════════ ⭐ START LISTENERS — NO where filter ═══════════════
+  // ═══════════════ START LISTENERS ⭐ FIX ═══════════════
   function startRealtimeListener() {
     stopRealtimeListener();
     setLive('connecting');
-    if (fetchInfo) fetchInfo.textContent = 'Loading data from Firestore...';
 
-    // ✅ Helper — collection တစ်ခုလုံး ဆွဲ၊ userId filter မပါ
+    // ⭐ Status reset
+    collectionStatus.message = 'loading';
+    collectionStatus.commands = 'loading';
+    collectionStatus.blocked = 'loading';
+    updateAllStatus();
+
     function listenCollection(name, sortField, max, assign, unsubArr) {
       const q = query(collection(db, name), limit(max));
 
@@ -1309,16 +1361,32 @@
         console.log(`✅ ${name}: ${arr.length} docs loaded`);
         if (arr.length > 0) console.log(`   sample userId:`, arr[0].userId);
 
+        // ⭐ Status update
+        collectionStatus[name] = arr.length;
+        updateAllStatus();
+
+        // Data ရောက်ရင် LIVE ပြ
+        if (name === 'message' && arr.length > 0) setLive('live');
+
         assign(arr);
       }, (err) => {
         console.error(`❌ ${name} error:`, err.code, err.message);
+
+        // ⭐ Error status update
+        collectionStatus[name] = 'error: ' + (err.code || 'error') + ' ' + (err.message || '');
+        updateAllStatus();
+
+        setLive('offline');
+
         if (err.code === 'permission-denied') {
-          setLive('offline');
           toastError('Firestore permission denied — rules စစ်ပါ');
-        } else if (err.code === 'unavailable' || err.code === 'deadline-exceeded') {
-          setLive('offline');
+        } else if (err.code === 'unavailable') {
+          toastError('Network မကောင်းဘူး');
+        } else if (err.code === 'failed-precondition') {
+          toastError('Firestore database မရှိသေးဘူး');
+        } else if (err.code === 'invalid-argument') {
+          toastError('API key မှားနေတယ်');
         } else {
-          setLive('offline');
           toastError(`${name}: ${err.message}`);
         }
       });
@@ -1330,8 +1398,6 @@
     listenCollection('message', 'date', 500, (arr) => {
       allDocs = arr;
       saveCache(currentEmail, arr);
-      setLive('live');
-      if (fetchInfo) fetchInfo.textContent = 'Loaded: ' + arr.length + ' docs';
       computeBadges();
       if (currentTab && !dataScreen.classList.contains('hidden')) renderTab(currentTab);
     }, unsubMessageList);
@@ -1400,12 +1466,13 @@
     if (cached && cached.docs.length > 0) {
       allDocs = cached.docs;
       setLive('cached');
-      const ageMin = Math.round((Date.now() - cached.time) / 60000);
-      if (fetchInfo) fetchInfo.textContent = "Cached: " + cached.docs.length + " docs (" + ageMin + "m ago)";
+      collectionStatus.message = cached.docs.length;
+      collectionStatus.commands = 'loading';
+      collectionStatus.blocked = 'loading';
+      updateAllStatus();
       computeBadges();
     } else {
       setLive('connecting');
-      if (fetchInfo) fetchInfo.textContent = "Loading data from Firestore...";
     }
 
     startRealtimeListener();
@@ -1413,8 +1480,6 @@
     setTimeout(() => {
       if (allDocs.length === 0 && currentEmail === email) {
         setLive('offline');
-        if (fetchInfo) fetchInfo.textContent = "Data မလာသေးဘူး — Refresh နှိပ်ပါ";
-        toastWarning("Data မလာသေးဘူး — refresh လုပ်ကြည့်ပါ");
       }
     }, 15000);
   }
@@ -2397,4 +2462,4 @@
   console.log("✅ Dashboard loaded — all fixes applied");
 </script>
 </body>
-</html>
+     </html>
